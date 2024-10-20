@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+generator enums {
+  provider = "tsx ./prisma/enum-generator.ts"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  
+  email     String   @unique
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  password  String
+
+  street    String
+  city      String
+  state     String
+  zip       String   @db.VarChar(10)
+  dob       DateTime
+  phoneNo   String   @map("phone_number")
+
+  height    String? 
+  weight    String?
+
+  role      UserRole
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  HEALTHCARE_PROFESSIONAL
+}

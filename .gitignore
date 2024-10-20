@@ -1,0 +1,14 @@
+node_modules
+
+/.cache
+/build
+/public/build
+
+/coverage
+/playwright-report
+/test-results
+.vscode
+
+app/utils/enums.ts
+
+**/.DS_Store
