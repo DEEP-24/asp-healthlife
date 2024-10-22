@@ -17,34 +17,33 @@ export const RegisterSchema = z
     lastName: z.string().min(1, "Last name is required"),
     email: z.string().email("Invalid email address"),
     password: z.string().min(8, "Password must be at least 8 characters long"),
-    confirmPassword: z.string().min(8, "Password must be at least 8 characters long"),
-    street: z.string().min(1, "Street address is required"),
+    confirmPassword: z.string(),
+    street: z.string().min(1, "Street is required"),
     city: z.string().min(1, "City is required"),
     state: z.string().min(1, "State is required"),
-    zip: z.string().min(5, "ZIP code must be at least 5 characters"),
-    dob: z
-      .string()
-      .refine((date) => !Number.isNaN(Date.parse(date)), {
-        message: "Invalid date format",
-      })
-      .transform((date) => new Date(date)),
-    phoneNo: z.string().min(10, "Phone number must be at least 10 digits"),
-    role: z.nativeEnum(UserRole).refine((role) => role !== UserRole.ADMIN, {
-      message: "Invalid role selection",
-    }),
-    height: z.string().min(1, "Height is required"),
-    weight: z.string().min(1, "Weight is required"),
+    zip: z.string().min(1, "ZIP code is required"),
+    dob: z.string().min(1, "Date of birth is required"),
+    phoneNo: z.string().min(1, "Phone number is required"),
+    role: z.nativeEnum(UserRole),
+    height: z.string().optional(),
+    weight: z.string().optional(),
   })
-  .superRefine((val, ctx) => {
-    if (val.password !== val.confirmPassword) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Password and confirm password must match",
-        path: ["confirmPassword", "password"],
-      });
-    }
-    return true;
-  });
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  })
+  .refine(
+    (data) => {
+      if (data.role === UserRole.USER) {
+        return !!data.height && !!data.weight;
+      }
+      return true;
+    },
+    {
+      message: "Height and weight are required for users",
+      path: ["height", "weight"],
+    },
+  );
 
 export const ResetPasswordSchema = z
   .object({

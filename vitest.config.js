@@ -17,4 +17,7 @@ export default defineConfig({
       all: true,
     },
   },
+  server: {
+    port: 3000,
+  },
 })
