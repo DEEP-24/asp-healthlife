@@ -97,7 +97,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     },
   });
 
-  return redirectWithSuccess(`/recipes/${updatedRecipe.id}/view`, "Recipe updated");
+  return redirectWithSuccess(`/admin/recipes/${updatedRecipe.id}/view`, "Recipe updated");
 };
 
 export default function EditRecipe() {
@@ -115,201 +115,188 @@ export default function EditRecipe() {
   const params = useParams();
 
   return (
-    <>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="max-sm:w-full sm:flex-1">
-          <PageHeading title="Edit Recipe" />
+    <Card className="mx-auto max-w-screen-xl mt-10">
+      <CardContent className="p-6">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+          <div className="max-sm:w-full sm:flex-1">
+            <PageHeading title="Edit Recipe" />
+          </div>
         </div>
-        <div className="flex gap-4">
-          <Button variant="outline">
-            <Link to={`/recipes/${params.id}/view`}>Cancel</Link>
-          </Button>
-          <Button type="submit" form="edit-recipe-form" disabled={fetcher.isPending}>
-            {fetcher.isPending ? "Saving..." : "Save"}
-          </Button>
-        </div>
-      </div>
 
-      <Separator className="my-6" />
+        <fetcher.Form
+          method="post"
+          id="edit-recipe-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
 
-      <fetcher.Form
-        method="post"
-        id="edit-recipe-form"
-        // onKeyDown={(e) => {
-        //   if (e.key === 'Enter') {
-        //     e.preventDefault()
-        //   }
-        // }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
+            formData.append("ingredients", JSON.stringify(ingredients));
+            formData.append("steps", JSON.stringify(steps));
 
-          formData.append("ingredients", JSON.stringify(ingredients));
-          formData.append("steps", JSON.stringify(steps));
-
-          fetcher.submit(formData, {
-            method: "post",
-          });
-        }}
-      >
-        <section className="grid gap-x-8 gap-y-6 sm:grid-cols-3">
-          <div className="space-y-1">
-            <Label>Name</Label>
-            <p className="text-sm text-muted-foreground">
-              This will be displayed on your public platform
-            </p>
-          </div>
-          <div className="col-span-2 space-y-2">
-            <Input
-              aria-label="Recipe Name"
-              placeholder="Enter recipe name"
-              name="name"
-              autoFocus
-              defaultValue={recipe.title}
-              disabled={!!fetcher.data?.fieldErrors?.name}
-            />
-            {fetcher.data?.fieldErrors?.name && (
-              <div className="text-base/6 text-red-600 data-[disabled]:opacity-50 dark:text-red-500 sm:text-sm/6">
-                {fetcher.data.fieldErrors.name}
+            fetcher.submit(formData, {
+              method: "post",
+            });
+          }}
+        >
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <p className="text-sm text-muted-foreground">
+                  This will be displayed on your public platform
+                </p>
               </div>
-            )}
-          </div>
-        </section>
-
-        <Separator className="my-6" />
-        <section className="grid gap-x-8 gap-y-6 sm:grid-cols-3">
-          <div className="space-y-1">
-            <Label>Description</Label>
-            <p className="text-sm text-muted-foreground">Maximum 240 characters</p>
-          </div>
-          <div className="col-span-2 space-y-2">
-            <Textarea
-              aria-label="Description"
-              name="description"
-              placeholder="Enter description"
-              defaultValue={recipe.description}
-            />
-            {fetcher.data?.fieldErrors?.description && (
-              <div className="text-base/6 text-red-600 data-[disabled]:opacity-50 dark:text-red-500 sm:text-sm/6">
-                {fetcher.data.fieldErrors.description}
+              <div className="space-y-2">
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="Enter recipe name"
+                  autoFocus
+                  defaultValue={recipe.title}
+                  aria-invalid={!!fetcher.data?.fieldErrors?.name}
+                />
+                {fetcher.data?.fieldErrors?.name && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.name}</p>
+                )}
               </div>
-            )}
-          </div>
-        </section>
+            </div>
 
-        <Separator className="my-6" />
-        <section className="grid gap-x-8 gap-y-6 sm:grid-cols-3">
-          <div className="space-y-1">
-            <Label>Price</Label>
-            <p className="text-sm text-muted-foreground">Price in USD</p>
-          </div>
-          <div className="col-span-2 space-y-2">
-            <Input
-              aria-label="Price"
-              name="price"
-              placeholder="Enter price"
-              min={1}
-              type="number"
-              defaultValue={recipe.price}
-              disabled={!!fetcher.data?.fieldErrors?.price}
-            />
-            {fetcher.data?.fieldErrors?.price && (
-              <div className="text-base/6 text-red-600 data-[disabled]:opacity-50 dark:text-red-500 sm:text-sm/6">
-                {fetcher.data.fieldErrors.price}
+            <Separator className="my-6" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <p className="text-sm text-muted-foreground">Maximum 240 characters</p>
               </div>
-            )}
-          </div>
-        </section>
-
-        <Separator className="my-6" />
-        <section className="grid gap-x-8 gap-y-6 sm:grid-cols-3">
-          <div className="space-y-1">
-            <Label>Image</Label>
-            <p className="text-sm texst-muted-foreground">Image of your final dish</p>
-          </div>
-          <div className="col-span-2 space-y-2">
-            <Input
-              aria-label="Image URL"
-              placeholder="Enter image URL"
-              name="image"
-              type="url"
-              defaultValue={recipe.image}
-              disabled={!!fetcher.data?.fieldErrors?.image}
-            />
-            {fetcher.data?.fieldErrors?.image && (
-              <div className="text-base/6 text-red-600 data-[disabled]:opacity-50 dark:text-red-500 sm:text-sm/6">
-                {fetcher.data.fieldErrors.image}
+              <div className="space-y-2">
+                <Textarea
+                  id="description"
+                  name="description"
+                  placeholder="Enter description"
+                  defaultValue={recipe.description}
+                  aria-invalid={!!fetcher.data?.fieldErrors?.description}
+                />
+                {fetcher.data?.fieldErrors?.description && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.description}</p>
+                )}
               </div>
-            )}
-          </div>
-        </section>
+            </div>
 
-        <Separator className="my-6" />
-
-        <section className="grid gap-x-8 gap-y-6 sm:grid-cols-3">
-          <div className="space-y-1">
-            <Label>Cooking Time</Label>
-            <p className="text-sm text-muted-foreground">How long will it take to cook?</p>
-          </div>
-          <div className="col-span-2 space-y-2">
-            <Input
-              aria-label="Cooking Time"
-              placeholder="Enter cooking time"
-              name="cookingTime"
-              defaultValue={recipe.cookingTime}
-              disabled={!!fetcher.data?.fieldErrors?.cookingTime}
-            />
-            {fetcher.data?.fieldErrors?.cookingTime && (
-              <div className="text-base/6 text-red-600 data-[disabled]:opacity-50 dark:text-red-500 sm:text-sm/6">
-                {fetcher.data.fieldErrors.cookingTime}
+            <Separator className="my-6" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <p className="text-sm text-muted-foreground">Price in USD</p>
               </div>
-            )}
-          </div>
-        </section>
-
-        <Separator className="my-6" />
-        <section className="grid gap-x-8 gap-y-6 sm:grid-cols-3">
-          <div className="space-y-2">
-            <Label>Ingredients</Label>
-            <p className="text-sm text-muted-foreground">List of ingredients</p>
-          </div>
-          <div className="col-span-2 space-y-2">
-            <Ingredients
-              integrdients={ingredients}
-              onUpdate={(ingredients) => setIngredients(ingredients)}
-            />
-            {fetcher.data?.fieldErrors?.ingredients && (
-              <div className="text-base/6 text-red-600 data-[disabled]:opacity-50 dark:text-red-500 sm:text-sm/6">
-                {fetcher.data.fieldErrors.ingredients}
+              <div className="space-y-2">
+                <Input
+                  id="price"
+                  name="price"
+                  placeholder="Enter price"
+                  min={1}
+                  type="number"
+                  defaultValue={recipe.price}
+                  aria-invalid={!!fetcher.data?.fieldErrors?.price}
+                />
+                {fetcher.data?.fieldErrors?.price && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.price}</p>
+                )}
               </div>
-            )}
-          </div>
-        </section>
+            </div>
 
-        <Separator className="my-6" />
-
-        <section className="grid gap-x-8 gap-y-6 sm:grid-cols-3">
-          <div className="space-y-2">
-            <Label>Steps</Label>
-            <p className="text-sm text-muted-foreground">List of steps</p>
-          </div>
-          <div className="col-span-2 space-y-2">
-            <Steps
-              steps={steps}
-              onUpdate={(steps) => {
-                const updatedSteps = steps.map((s, index) => ({ ...s, order: index + 1 }));
-                setSteps(updatedSteps);
-              }}
-            />
-            {fetcher.data?.fieldErrors?.steps && (
-              <div className="text-base/6 text-red-600 data-[disabled]:opacity-50 dark:text-red-500 sm:text-sm/6">
-                {fetcher.data.fieldErrors.steps}
+            <Separator className="my-6" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="image">Image</Label>
+                <p className="text-sm texst-muted-foreground">Image of your final dish</p>
               </div>
-            )}
+              <div className="space-y-2">
+                <Input
+                  id="image"
+                  placeholder="Enter image URL"
+                  name="image"
+                  type="url"
+                  defaultValue={recipe.image}
+                  aria-invalid={!!fetcher.data?.fieldErrors?.image}
+                />
+                {fetcher.data?.fieldErrors?.image && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.image}</p>
+                )}
+              </div>
+            </div>
+
+            <Separator className="my-6" />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="cookingTime">Cooking Time</Label>
+                <p className="text-sm text-muted-foreground">How long will it take to cook?</p>
+              </div>
+              <div className="space-y-2">
+                <Input
+                  id="cookingTime"
+                  placeholder="Enter cooking time"
+                  name="cookingTime"
+                  defaultValue={recipe.cookingTime}
+                  aria-invalid={!!fetcher.data?.fieldErrors?.cookingTime}
+                />
+                {fetcher.data?.fieldErrors?.cookingTime && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.cookingTime}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="ingredients">Ingredients</Label>
+                <p className="text-sm text-muted-foreground">List of ingredients</p>
+              </div>
+              <div className="space-y-2">
+                <Ingredients
+                  integrdients={ingredients}
+                  onUpdate={(ingredients) => setIngredients(ingredients)}
+                />
+                {fetcher.data?.fieldErrors?.ingredients && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.ingredients}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="steps">Steps</Label>
+                <p className="text-sm text-muted-foreground">List of steps</p>
+              </div>
+              <div className="space-y-4">
+                <Steps
+                  steps={steps}
+                  onUpdate={(steps) => {
+                    const updatedSteps = steps.map((s, index) => ({ ...s, order: index + 1 }));
+                    setSteps(updatedSteps);
+                  }}
+                />
+                {fetcher.data?.fieldErrors?.steps && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.steps}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-4 items-center justify-end">
+              <Button variant="outline" asChild>
+                <Link to={`/recipes/${params.id}/view`}>Cancel</Link>
+              </Button>
+              <Button
+                type="submit"
+                form="edit-recipe-form"
+                className="bg-green-200 text-green-900 hover:bg-green-300"
+                disabled={fetcher.isPending}
+              >
+                {fetcher.isPending ? "Updating..." : "Update"}
+              </Button>
+            </div>
           </div>
-        </section>
-      </fetcher.Form>
-    </>
+        </fetcher.Form>
+      </CardContent>
+    </Card>
   );
 }
 
