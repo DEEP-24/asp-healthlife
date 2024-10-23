@@ -12,29 +12,69 @@ generator enums {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  
-  email     String   @unique
-  firstName String   @map("first_name")
-  lastName  String   @map("last_name")
+  id String @id @default(uuid())
+
+  email     String @unique
+  firstName String @map("first_name")
+  lastName  String @map("last_name")
   password  String
 
-  street    String
-  city      String
-  state     String
-  zip       String   @db.VarChar(10)
-  dob       DateTime
-  phoneNo   String   @map("phone_number")
+  street  String
+  city    String
+  state   String
+  zip     String   @db.VarChar(10)
+  dob     DateTime
+  phoneNo String   @map("phone_number")
 
-  height    String? 
-  weight    String?
+  height String?
+  weight String?
 
-  role      UserRole
+  role UserRole
 
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  recipe    Recipes[]
+
+  @@map("user")
+}
+
+model Recipes {
+  id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("user")
+  title       String
+  description String
+  image       String
+  price       Int
+  cookingTime String @map("cooking_time")
+
+  steps       Step[]
+  ingredients Ingredient[]
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String
+
+  @@map("recipes")
+}
+
+model Step {
+  id       String  @id @default(uuid())
+  order    Int
+  content  String
+  recipe   Recipes @relation(fields: [recipeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  recipeId String
+
+  @@unique([recipeId, order])
+}
+
+model Ingredient {
+  id       String @id @default(uuid())
+  name     String
+  quantity String
+
+  recipe   Recipes @relation(fields: [recipeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  recipeId String
 }
 
 enum UserRole {

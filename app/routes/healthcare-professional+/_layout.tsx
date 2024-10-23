@@ -2,7 +2,7 @@ import { type LoaderFunctionArgs, json } from "@remix-run/node";
 import { NavLink, Outlet, useLocation } from "@remix-run/react";
 import { Avatar, AvatarFallback } from "components/ui/avatar";
 import { Button } from "components/ui/button";
-import { ActivityIcon, HeartPulseIcon, LogOutIcon, ShoppingCartIcon } from "lucide-react";
+import { ActivityIcon, HeartPulseIcon, LogOutIcon } from "lucide-react";
 
 import { requireUserId, validateUserRole } from "~/lib/session.server";
 import { UserRole } from "~/utils/enums";
@@ -81,8 +81,10 @@ function Sidebar() {
       </nav>
       <div className="p-4 flex flex-col items-center justify-center">
         <div className="flex items-center gap-3 mb-4">
-          <Avatar className="bg-[#0b5c11]">
-            <AvatarFallback className="text-white">{getInitials(user.name)}</AvatarFallback>
+          <Avatar>
+            <AvatarFallback className="text-white bg-[#0b5c11]">
+              {getInitials(user.name)}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <p className="text-sm font-bold text-[#003406]">{user.name}</p>

@@ -1,9 +1,10 @@
-import type { User } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import type { User } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
-import { db } from '~/lib/prisma.server'
+import { db } from "~/lib/prisma.server";
+import type { UserRole } from "~/utils/enums";
 
-export async function getUserById(id: User['id']) {
+export async function getUserById(id: User["id"]) {
   return db.user.findUnique({
     select: {
       email: true,
@@ -13,25 +14,25 @@ export async function getUserById(id: User['id']) {
       role: true,
     },
     where: { id },
-  })
+  });
 }
 
-export async function verifyLogin(email: User['email'], password: string) {
+export async function verifyLogin(email: User["email"], password: string, role: UserRole) {
   const userWithPassword = await db.user.findUnique({
-    where: { email },
-  })
+    where: { email, role },
+  });
 
   if (!userWithPassword || !userWithPassword.password) {
-    return null
+    return null;
   }
 
-  const isValid = await bcrypt.compare(password, userWithPassword.password)
+  const isValid = await bcrypt.compare(password, userWithPassword.password);
 
   if (!isValid) {
-    return null
+    return null;
   }
 
-  const { password: _password, ...userWithoutPassword } = userWithPassword
+  const { password: _password, ...userWithoutPassword } = userWithPassword;
 
-  return userWithoutPassword
+  return userWithoutPassword;
 }

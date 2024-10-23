@@ -1,85 +1,108 @@
-import { Button } from 'components/ui/button'
-import type { ActionFunctionArgs } from '@remix-run/node'
-import { Link, useFetcher, useSearchParams } from '@remix-run/react'
-import { Input } from 'components/ui/input'
-import { Label } from 'components/ui/label'
-import { HeartPulseIcon } from 'lucide-react'
+import { Button } from "components/ui/button";
+import type { ActionFunctionArgs } from "@remix-run/node";
+import { Link, useFetcher, useSearchParams } from "@remix-run/react";
+import { Input } from "components/ui/input";
+import { Label } from "components/ui/label";
+import { HeartPulseIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "components/ui/select";
 
-import { verifyLogin } from '~/lib/auth.server'
-import { createUserSession } from '~/lib/session.server'
-import { badRequest, safeRedirect } from '~/utils/misc.server'
-import { type inferErrors, validateAction } from '~/utils/validation'
-import { LoginSchema } from '~/utils/zod.schema'
+import { verifyLogin } from "~/lib/auth.server";
+import { createUserSession } from "~/lib/session.server";
+import { badRequest, safeRedirect } from "~/utils/misc.server";
+import { type inferErrors, validateAction } from "~/utils/validation";
+import { LoginSchema } from "~/utils/zod.schema";
+import { UserRole } from "~/utils/enums";
 
 interface ActionData {
-  fieldErrors?: inferErrors<typeof LoginSchema>
+  fieldErrors?: inferErrors<typeof LoginSchema>;
 }
 
 export type SearchParams = {
-  redirectTo?: string
-}
+  redirectTo?: string;
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   try {
-    const { fieldErrors, fields } = await validateAction(request, LoginSchema)
+    const { fieldErrors, fields } = await validateAction(request, LoginSchema);
 
     if (fieldErrors) {
-      console.log('Field validation errors:', fieldErrors)
-      return badRequest<ActionData>({ fieldErrors })
+      console.log("Field validation errors:", fieldErrors);
+      return badRequest<ActionData>({ fieldErrors });
     }
 
-    const { email, password, redirectTo, remember } = fields
+    const { email, password, redirectTo, remember, role } = fields;
 
-    const user = await verifyLogin(email, password)
+    const user = await verifyLogin(email, password, role);
 
     if (!user) {
-      console.log('Invalid login attempt for email:', email)
+      console.log("Invalid login attempt for email:", email);
       return badRequest<ActionData>({
         fieldErrors: {
-          password: 'Invalid username or password',
+          password: "Invalid username or password",
         },
-      })
+      });
     }
 
-    const safeRedirectTo = safeRedirect(redirectTo, '/')
+    const safeRedirectTo = safeRedirect(redirectTo, "/");
 
     return createUserSession({
       redirectTo: safeRedirectTo,
-      remember: remember === 'on',
+      remember: remember === "on",
       request,
       role: user.role,
       userId: user.id,
-    })
+    });
   } catch (error) {
-    console.error('Login error:', error)
+    console.error("Login error:", error);
     return badRequest<ActionData>({
       fieldErrors: {
-        email: 'An unexpected error occurred. Please try again.',
+        email: "An unexpected error occurred. Please try again.",
       },
-    })
+    });
   }
-}
+};
 
 export default function Login() {
-  const fetcher = useFetcher<ActionData>()
-  const [searchParams] = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') || '/'
-  const isSubmitting = fetcher.state !== 'idle'
+  const fetcher = useFetcher<ActionData>();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") || "/";
+  const isSubmitting = fetcher.state !== "idle";
 
   return (
     <div className="rounded-lg bg-white p-8 shadow-xl">
       <div className="mb-8 text-center">
         <HeartPulseIcon className="mx-auto h-12 w-12 text-green-500" />
-        <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-          Welcome to HealthLife
-        </h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Your Personalized Health Companion
-        </p>
+        <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Welcome to HealthLife</h2>
+        <p className="mt-2 text-sm text-gray-600">Your Personalized Health Companion</p>
       </div>
 
       <fetcher.Form method="post" className="space-y-6">
         <input type="hidden" name="redirectTo" value={redirectTo} />
+        <div>
+          <Label htmlFor="role">Role</Label>
+          <Select name="role" required disabled={isSubmitting}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a role" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(UserRole).map((role) => (
+                <SelectItem key={role} value={role}>
+                  {role}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {fetcher.data?.fieldErrors?.role && (
+            <p className="mt-2 text-sm text-red-600">{fetcher.data.fieldErrors.role}</p>
+          )}
+        </div>
+
         <div>
           <Label htmlFor="email">Email</Label>
           <Input
@@ -91,9 +114,7 @@ export default function Login() {
             disabled={isSubmitting}
           />
           {fetcher.data?.fieldErrors?.email && (
-            <p className="mt-2 text-sm text-red-600">
-              {fetcher.data.fieldErrors.email}
-            </p>
+            <p className="mt-2 text-sm text-red-600">{fetcher.data.fieldErrors.email}</p>
           )}
         </div>
 
@@ -108,9 +129,7 @@ export default function Login() {
             disabled={isSubmitting}
           />
           {fetcher.data?.fieldErrors?.password && (
-            <p className="mt-2 text-sm text-red-600">
-              {fetcher.data.fieldErrors.password}
-            </p>
+            <p className="mt-2 text-sm text-red-600">{fetcher.data.fieldErrors.password}</p>
           )}
         </div>
 
@@ -122,10 +141,7 @@ export default function Login() {
               type="checkbox"
               className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
             />
-            <Label
-              htmlFor="remember"
-              className="ml-2 block text-sm text-gray-900"
-            >
+            <Label htmlFor="remember" className="ml-2 block text-sm text-gray-900">
               Remember me
             </Label>
           </div>
@@ -137,20 +153,17 @@ export default function Login() {
             className="w-full rounded-md bg-green-500 px-4 py-2 text-white transition duration-150 ease-in-out hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
+            {isSubmitting ? "Signing in..." : "Sign in"}
           </Button>
         </div>
       </fetcher.Form>
 
       <p className="mt-8 text-center text-sm text-gray-600">
-        Not a member?{' '}
-        <Link
-          to="/register"
-          className="font-medium text-green-600 hover:text-green-500"
-        >
+        Not a member?{" "}
+        <Link to="/register" className="font-medium text-green-600 hover:text-green-500">
           Start your health journey today
         </Link>
       </p>
     </div>
-  )
+  );
 }

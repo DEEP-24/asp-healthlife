@@ -81,8 +81,10 @@ function Sidebar() {
       </nav>
       <div className="p-4 flex flex-col items-center justify-center">
         <div className="flex items-center gap-3 mb-4">
-          <Avatar className="bg-[#0b5c11]">
-            <AvatarFallback className="text-white">{getInitials(user.name)}</AvatarFallback>
+          <Avatar>
+            <AvatarFallback className="text-white bg-[#0b5c11]">
+              {getInitials(user.name)}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <p className="text-sm font-bold text-[#003406]">{user.name}</p>

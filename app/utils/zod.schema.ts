@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { UserRole } from "~/utils/enums";
+import type { Ingredient } from "@prisma/client";
 
 // const EMAIL_REGEX =
 //   /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
@@ -9,6 +10,7 @@ export const LoginSchema = z.object({
   password: z.string().min(1, "Password is required"),
   redirectTo: z.string().trim().default("/"),
   remember: z.enum(["on"]).optional(),
+  role: z.nativeEnum(UserRole),
 });
 
 export const RegisterSchema = z
@@ -99,3 +101,47 @@ export const EditUserSchema = CreateUserSchema.omit({
 }).extend({
   donorId: z.string().trim().min(1, "ID is required"),
 });
+
+export type SelectIngredient = Omit<Ingredient, "recipeId">;
+export type Step = {
+  id: string;
+  order: number;
+  content: string;
+};
+
+export const RecipeSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required"),
+    description: z.string().trim().min(1, "Description is required"),
+    image: z.string().url().trim().min(1, "Image is required"),
+    price: z.string().trim().min(1, "Price is required"),
+    cookingTime: z.string().trim().min(1, "Cooking time is required"),
+    commission: z.string().optional().default("0"),
+    ingredients: z
+      .string()
+      .min(1, "Ingredients is required")
+      .transform((ingredients) => JSON.parse(ingredients) as Array<SelectIngredient>),
+    steps: z
+      .string()
+      .min(1, "Steps is required")
+      .transform((steps) => JSON.parse(steps) as Array<Step>),
+  })
+  .superRefine((data, ctx) => {
+    if (data.ingredients.length === 0) {
+      return ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Ingredients is required",
+        path: ["ingredients"],
+      });
+    }
+
+    if (data.steps.length === 0) {
+      return ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Steps is required",
+        path: ["steps"],
+      });
+    }
+
+    return true;
+  });
