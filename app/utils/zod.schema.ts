@@ -145,3 +145,10 @@ export const RecipeSchema = z
 
     return true;
   });
+
+export const AppointmentSchema = z.object({
+  doctorId: z.string().trim().min(1, "Doctor is required"),
+  date: z.string().trim().min(1, "Date is required"),
+  startTime: z.string().trim().min(1, "Start time is required"),
+  endTime: z.string().trim().min(1, "End time is required"),
+});

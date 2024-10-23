@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 import { createHash } from "~/utils/encryption";
-import { UserRole } from "~/utils/enums";
+import { AppointmentStatus, UserRole } from "~/utils/enums";
 
 const db = new PrismaClient();
 
@@ -167,6 +167,31 @@ async function createRecipes() {
   console.timeEnd("🍽️ Created recipes...");
 }
 
+async function createAppointment() {
+  console.time("📅 Created appointment...");
+
+  const doctor = await db.user.findFirst({ where: { role: UserRole.HEALTHCARE_PROFESSIONAL } });
+  const patient = await db.user.findFirst({ where: { role: UserRole.USER } });
+
+  if (!doctor || !patient) {
+    throw new Error("Doctor or patient not found");
+  }
+
+  await db.appointment.create({
+    data: {
+      doctorId: doctor.id,
+      patientId: patient.id,
+      date: new Date("2024-03-15T10:00:00Z"),
+      status: AppointmentStatus.SCHEDULED,
+      notes: "Initial consultation",
+      startTime: new Date("2024-03-15T10:00:00Z"),
+      endTime: new Date("2024-03-15T11:00:00Z"),
+    },
+  });
+
+  console.timeEnd("📅 Created appointment...");
+}
+
 async function seed() {
   console.log("🌱 Seeding...\n");
 
@@ -174,6 +199,7 @@ async function seed() {
   await cleanup();
   await createUsers();
   await createRecipes();
+  await createAppointment();
 
   console.timeEnd("🌱 Database has been seeded");
 }

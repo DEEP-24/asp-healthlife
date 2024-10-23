@@ -31,7 +31,7 @@ export default function ViewRecipe() {
       <ScrollArea className="h-full">
         <div className="container py-10">
           <div className="mb-4">
-            <Link to="/recipes" className="text-green-900 hover:underline">
+            <Link to="/healthcare-professional/recipes" className="text-green-900 hover:underline">
               ← Back to Recipes
             </Link>
           </div>

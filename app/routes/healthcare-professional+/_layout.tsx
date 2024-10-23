@@ -2,7 +2,7 @@ import { type LoaderFunctionArgs, json } from "@remix-run/node";
 import { NavLink, Outlet, useLocation } from "@remix-run/react";
 import { Avatar, AvatarFallback } from "components/ui/avatar";
 import { Button } from "components/ui/button";
-import { ActivityIcon, HeartPulseIcon, LogOutIcon } from "lucide-react";
+import { ActivityIcon, CookingPotIcon, HeartPulseIcon, LogOutIcon } from "lucide-react";
 
 import { requireUserId, validateUserRole } from "~/lib/session.server";
 import { UserRole } from "~/utils/enums";
@@ -23,14 +23,14 @@ type SidebarLinkType = {
 
 const sidebarLinks: SidebarLinkType[] = [
   {
-    to: "/bmi",
+    to: "/healthcare-professional/appointments",
     icon: ActivityIcon,
-    label: "BMI",
+    label: "Appointments",
   },
   {
-    to: "/calories",
-    icon: HeartPulseIcon,
-    label: "Calories",
+    to: "/healthcare-professional/recipes",
+    icon: CookingPotIcon,
+    label: "Diet Recipes",
   },
 ];
 

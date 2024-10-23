@@ -31,9 +31,9 @@ export default function ViewRecipe() {
       <ScrollArea className="h-full">
         <div className="container py-10">
           <div className="mb-4">
-            <Button variant="outline" asChild>
-              <Link to="/admin/recipes">← Back to Recipes</Link>
-            </Button>
+            <Link to="/recipes" className="text-green-900 hover:underline">
+              ← Back to Recipes
+            </Link>
           </div>
           <Card className="overflow-hidden shadow-lg">
             <CardHeader>

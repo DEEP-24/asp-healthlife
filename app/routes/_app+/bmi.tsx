@@ -41,7 +41,7 @@ export default function BMI() {
 
   return (
     <div>
-      <PageHeading>BMI Calculator</PageHeading>
+      <PageHeading title="BMI Calculator" />
       <div className="mx-auto p-4 min-h-screen bg-white">
         <div className="space-y-8">
           <div className="text-gray-600">
