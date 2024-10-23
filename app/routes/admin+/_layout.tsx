@@ -25,7 +25,7 @@ const sidebarLinks: SidebarLinkType[] = [
   {
     to: "/admin/recipes",
     icon: CookingPotIcon,
-    label: "Recipes",
+    label: "Diet Recipes",
   },
 ];
 

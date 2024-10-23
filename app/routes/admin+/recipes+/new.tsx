@@ -95,7 +95,7 @@ export default function NewRecipe() {
       <CardContent className="p-6">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
           <div className="max-sm:w-full sm:flex-1">
-            <PageHeading>New Recipe</PageHeading>
+            <PageHeading title="New Recipe" />
           </div>
         </div>
 
