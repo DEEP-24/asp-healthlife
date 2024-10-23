@@ -1,5 +1,5 @@
 import { json } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, Form } from "@remix-run/react";
 import { Avatar, AvatarImage } from "components/ui/avatar";
 import { Separator } from "components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "components/ui/table";
@@ -69,8 +69,9 @@ export default function AdminRecipes() {
                             Edit
                           </Button>
                         </Link>
-                        <Link to={`/admin/recipes/${recipe.id}/delete`}>
+                        <Form method="post" action={`/admin/recipes/${recipe.id}/delete`}>
                           <Button
+                            type="submit"
                             variant="outline"
                             size="sm"
                             className="text-red-500 hover:text-red-700"
@@ -78,7 +79,7 @@ export default function AdminRecipes() {
                             <TrashIcon className="w-4 h-4 mr-1" />
                             Delete
                           </Button>
-                        </Link>
+                        </Form>
                       </div>
                     </TableCell>
                   </TableRow>
