@@ -2,7 +2,7 @@ import type { ActionFunctionArgs } from "@remix-run/node";
 import { Link, useFetcher } from "@remix-run/react";
 import { Input } from "components/ui/input";
 import { Label } from "components/ui/label";
-import { HeartPulseIcon } from "lucide-react";
+import { HeartPulseIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import * as React from "react";
 import { jsonWithError } from "remix-toast";
 import { UserRole } from "~/utils/enums";
@@ -96,6 +96,9 @@ export default function Register() {
   const [role, setRole] = React.useState<UserRole>();
   const [height, setHeight] = React.useState("");
   const [weight, setWeight] = React.useState("");
+
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   const nextStep = () => setStep((prevStep) => Math.min(prevStep + 1, 3));
   const prevStep = () => setStep((prevStep) => Math.max(prevStep - 1, 1));
@@ -357,15 +360,28 @@ export default function Register() {
               <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="mt-1 block w-full"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="mt-1 block w-full"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-4 w-4" />
+                  ) : (
+                    <EyeIcon className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {fetcher?.data?.fieldErrors?.password && (
                 <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.password}</p>
               )}
@@ -374,15 +390,28 @@ export default function Register() {
               <Label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm Password
               </Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="mt-1 block w-full"
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="mt-1 block w-full"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOffIcon className="h-4 w-4" />
+                  ) : (
+                    <EyeIcon className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {fetcher?.data?.fieldErrors?.confirmPassword && (
                 <p className="mt-1 text-xs text-red-600">
                   {fetcher.data.fieldErrors.confirmPassword}

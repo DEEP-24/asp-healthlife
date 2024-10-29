@@ -8,7 +8,12 @@ const db = new PrismaClient();
 async function cleanup() {
   console.time("🧹 Cleaned up the database...");
 
+  await db.passwordReset.deleteMany();
   await db.user.deleteMany();
+  await db.appointment.deleteMany();
+  await db.recipes.deleteMany();
+  await db.ingredient.deleteMany();
+  await db.step.deleteMany();
 
   console.timeEnd("🧹 Cleaned up the database...");
 }
