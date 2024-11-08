@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "components/ui/avatar";
 import { Button } from "components/ui/button";
 import {
   ActivityIcon,
+  CalendarIcon,
   CookingPotIcon,
   HeartPulseIcon,
   LogOutIcon,
@@ -42,6 +43,11 @@ const sidebarLinks: SidebarLinkType[] = [
     to: "/contact",
     icon: MessageCircleIcon,
     label: "Contact",
+  },
+  {
+    to: "/appointments",
+    icon: CalendarIcon,
+    label: "Appointments",
   },
 ];
 

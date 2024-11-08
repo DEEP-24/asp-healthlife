@@ -241,9 +241,12 @@ export default function AppointmentView() {
     <div className="container mx-auto py-8 px-4">
       <PageHeading title="Appointment Details" />
       <div>
-        <Link to="/doctor/appointments" className="hover:underline flex items-center gap-1 mb-2">
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back
+        <Link
+          to="/doctor/appointments"
+          className="hover:underline flex items-center gap-1 mb-4 text-sm text-muted-foreground w-fit"
+        >
+          <ArrowLeftIcon className="h-2.5 w-2.5" />
+          <span>Back</span>
         </Link>
       </div>
       <div className="grid gap-6">
