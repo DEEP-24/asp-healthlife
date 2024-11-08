@@ -54,10 +54,12 @@ export default function Appointments() {
                 </p>
               </div>
               <div className="flex items-center gap-2 mt-2">
-                <Button className="w-full bg-green-100 hover:bg-green-200 text-green-800">
-                  <EyeIcon className="h-4 w-4" />
-                  <Link to={`/doctor/appointments/${appointment.id}`}>View</Link>
-                </Button>
+                <Link to={`/doctor/appointments/${appointment.id}`}>
+                  <Button className="w-full bg-green-100 hover:bg-green-200 text-green-800">
+                    <EyeIcon className="h-4 w-4" />
+                    View
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

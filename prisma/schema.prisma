@@ -41,10 +41,9 @@ model User {
 
   passwordResets PasswordReset[]
 
-  availability      DoctorAvailability[]
-  mealPlans         MealPlan[]
-  assignedMealPlans PatientMealPlan[]
-  healthMetrics     HealthMetric[]
+  availability  DoctorAvailability[]
+  mealPlans     MealPlan[]
+  healthMetrics HealthMetric[]
 
   @@map("user")
 }
@@ -119,13 +118,11 @@ model Appointment {
   doctor   User   @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   doctorId String
 
+  doctorNotes   String?
+  healthMetrics HealthMetric[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  doctorNotes String?
-
-  prescribedMealPlan   PatientMealPlan? @relation(fields: [prescribedMealPlanId], references: [id])
-  prescribedMealPlanId String?
 
   @@map("appointments")
 }
@@ -151,14 +148,13 @@ model MealPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  meal Meal[]
+
   appointment   Appointment @relation(fields: [appointmentId], references: [id])
   appointmentId String      @unique
 
   User   User?   @relation(fields: [userId], references: [id])
   userId String?
-
-  meal            Meal[]
-  PatientMealPlan PatientMealPlan[]
 }
 
 model Meal {
@@ -177,36 +173,16 @@ model Meal {
   @@map("meals")
 }
 
-model PatientMealPlan {
-  id        String   @id @default(uuid())
-  startDate DateTime
-  endDate   DateTime
-
-  patient   User   @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  patientId String
-
-  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
-  mealPlanId String
-
-  appointments Appointment[]
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("patient_meal_plans")
-}
-
 model HealthMetric {
   id     String @id @default(uuid())
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  date        DateTime
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentId String
+
   waterIntake Float?
   calories    Int?
-  weight      Float?
   notes       String?
 
   createdAt DateTime @default(now())

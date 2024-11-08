@@ -1,31 +1,18 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigation } from "@remix-run/react";
-import { Alert, AlertDescription } from "components/ui/alert";
+import { type ActionFunctionArgs, type LoaderFunctionArgs, json, redirect } from "@remix-run/node";
+import { Link, useFetcher, useLoaderData } from "@remix-run/react";
 import { Button } from "components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
 import { Label } from "components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "components/ui/tabs";
 import { Textarea } from "components/ui/textarea";
 import { format } from "date-fns";
-import { CalendarIcon, Clock, User } from "lucide-react";
+import { ArrowLeftIcon, CalendarIcon, Clock, User } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { jsonWithSuccess } from "remix-toast";
+import PageHeading from "~/components/page-heading";
 import { db } from "~/lib/prisma.server";
-import { requireUserId } from "~/lib/session.server";
 import { AppointmentStatus } from "~/utils/enums";
 import { cn } from "~/utils/misc";
-import { validateAction } from "~/utils/validation";
-import { z } from "zod";
-
-const UpdateSchema = z.object({
-  notes: z.string().min(1, "Notes are required"),
-  mealPlan: z.string().min(1, "Meal plan is required"),
-  status: z.enum([
-    AppointmentStatus.COMPLETED,
-    AppointmentStatus.PENDING,
-    AppointmentStatus.CANCELLED,
-  ]),
-});
+import type { Meal, MealType } from "@prisma/client";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { appointmentId } = params;
@@ -40,9 +27,19 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
           lastName: true,
           email: true,
           phoneNo: true,
+          street: true,
+          city: true,
+          state: true,
+          zip: true,
+          dob: true,
         },
       },
-      mealPlan: true,
+      mealPlan: {
+        include: {
+          meal: true,
+        },
+      },
+      healthMetrics: true,
     },
   });
 
@@ -55,47 +52,200 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const { appointmentId } = params;
-  const { fields, fieldErrors } = await validateAction(request, UpdateSchema);
+  const formData = await request.formData();
+  const intent = formData.get("intent") as string;
 
-  if (fieldErrors) {
-    return json({ fieldErrors }, { status: 400 });
-  }
-
-  await db.appointment.update({
+  const appointment = await db.appointment.findUnique({
     where: { id: appointmentId },
-    data: {
-      notes: fields?.notes,
-      status: fields?.status,
-      mealPlan: {
-        upsert: {
-          create: {
-            plan: fields.mealPlan,
-          },
-          update: {
-            plan: fields.mealPlan,
-          },
-        },
-      },
-    },
   });
 
-  return jsonWithSuccess({ success: true }, "Appointment updated successfully");
+  if (!appointment) {
+    redirect("/doctor/appointments");
+  }
+
+  if (intent === "update_status") {
+    const status = formData.get("status") as string;
+    try {
+      await db.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          status: status as AppointmentStatus,
+        },
+      });
+      return jsonWithSuccess({ success: true }, "Appointment status updated successfully");
+    } catch (_error) {
+      return json({ error: "Failed to update status" }, { status: 500 });
+    }
+  }
+
+  if (intent === "update_notes") {
+    const notes = formData.get("notes") as string;
+    try {
+      await db.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          notes,
+        },
+      });
+      return jsonWithSuccess({ success: true }, "Appointment notes updated successfully");
+    } catch (error) {
+      console.error("Failed to update notes:", error);
+      return json({ error: "Failed to update notes" }, { status: 500 });
+    }
+  }
+
+  if (intent === "update_meal_plan") {
+    const meals = JSON.parse(formData.get("meals") as string);
+    try {
+      const updatedAppointment = await db.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          mealPlan: {
+            upsert: {
+              create: {
+                plan: "Weekly meal plan",
+                meal: {
+                  createMany: {
+                    data: meals.map((meal: any) => ({
+                      name: meal.name,
+                      type: meal.type,
+                      calories: Number.parseInt(meal.calories),
+                      protein: Number.parseFloat(meal.protein),
+                      carbs: Number.parseFloat(meal.carbs),
+                      fats: Number.parseFloat(meal.fats),
+                      foods: meal.foods,
+                    })),
+                  },
+                },
+              },
+              update: {
+                plan: "Weekly meal plan",
+                meal: {
+                  deleteMany: {},
+                  createMany: {
+                    data: meals.map((meal: any) => ({
+                      name: meal.name,
+                      type: meal.type,
+                      calories: Number.parseInt(meal.calories),
+                      protein: Number.parseFloat(meal.protein),
+                      carbs: Number.parseFloat(meal.carbs),
+                      fats: Number.parseFloat(meal.fats),
+                      foods: meal.foods,
+                    })),
+                  },
+                },
+              },
+            },
+          },
+        },
+        include: {
+          mealPlan: {
+            include: {
+              meal: true,
+            },
+          },
+        },
+      });
+
+      return jsonWithSuccess(
+        { success: true, mealPlan: updatedAppointment.mealPlan },
+        "Meal plan updated successfully",
+      );
+    } catch (error) {
+      console.error("Failed to update meal plan:", error);
+      return json({ error: "Failed to update meal plan" }, { status: 500 });
+    }
+  }
+
+  if (intent === "update_health_metrics") {
+    const waterIntake = Number.parseFloat(formData.get("waterIntake") as string);
+    const calories = Number.parseInt(formData.get("calories") as string);
+    const notes = formData.get("notes") as string;
+
+    try {
+      await db.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          healthMetrics: {
+            create: {
+              waterIntake,
+              calories,
+              notes,
+              user: {
+                connect: {
+                  id: appointment!.patientId,
+                },
+              },
+            },
+          },
+        },
+      });
+      return jsonWithSuccess({ success: true }, "Health metrics added successfully");
+    } catch (error) {
+      console.error("Failed to add health metrics:", error);
+      return json({ error: "Failed to add health metrics" }, { status: 500 });
+    }
+  }
+
+  return json({ error: "Invalid intent" }, { status: 400 });
 };
+
+const getStatusOptions = () => Object.values(AppointmentStatus);
+
+function formatFormDataToMeals(formData: FormData) {
+  const meals: Array<{
+    type: MealType;
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+    foods: string[];
+  }> = [];
+
+  for (const mealType of ["BREAKFAST", "LUNCH", "DINNER", "SNACK"] as MealType[]) {
+    const meal = {
+      type: mealType,
+      name: formData.get(`meals[${mealType}].name`) as string,
+      calories: Number(formData.get(`meals[${mealType}].calories`)),
+      protein: Number(formData.get(`meals[${mealType}].protein`)),
+      carbs: Number(formData.get(`meals[${mealType}].carbs`)),
+      fats: Number(formData.get(`meals[${mealType}].fats`)),
+      foods: ((formData.get(`meals[${mealType}].foods`) as string) || "")
+        .split(",")
+        .map((food) => food.trim())
+        .filter(Boolean),
+    };
+    meals.push(meal);
+  }
+  return meals;
+}
+
+function findMeal(meals: Meal[] | undefined, mealType: MealType) {
+  return meals?.find((m) => m.type === mealType);
+}
 
 export default function AppointmentView() {
   const { appointment } = useLoaderData<typeof loader>();
   const formRef = useRef<HTMLFormElement>(null);
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
+  const fetcher = useFetcher();
+  const isSubmitting = fetcher.state === "submitting";
 
   useEffect(() => {
-    if (navigation.state === "idle" && formRef.current) {
+    if (fetcher.state === "idle" && formRef.current) {
       formRef.current.reset();
     }
-  }, [navigation.state]);
+  }, [fetcher.state]);
 
   return (
     <div className="container mx-auto py-8 px-4">
+      <PageHeading title="Appointment Details" />
+      <div>
+        <Link to="/doctor/appointments" className="hover:underline flex items-center gap-1 mb-2">
+          <ArrowLeftIcon className="h-4 w-4" />
+          Back
+        </Link>
+      </div>
       <div className="grid gap-6">
         <Card>
           <CardHeader>
@@ -115,20 +265,46 @@ export default function AppointmentView() {
                     {format(new Date(appointment.endTime), "h:mm a")}
                   </span>
                 </div>
-                <div
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                    {
-                      "bg-green-100 text-green-800":
-                        appointment.status === AppointmentStatus.COMPLETED,
-                      "bg-yellow-100 text-yellow-800":
-                        appointment.status === AppointmentStatus.PENDING,
-                      "bg-red-100 text-red-800": appointment.status === AppointmentStatus.CANCELLED,
-                    },
-                  )}
-                >
-                  {appointment.status}
-                </div>
+                <fetcher.Form method="post" className="flex items-center gap-2">
+                  <select
+                    name="status"
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    defaultValue={appointment.status}
+                    onChange={(e) => {
+                      fetcher.submit(
+                        {
+                          status: e.target.value,
+                          intent: "update_status",
+                        },
+                        { method: "post" },
+                      );
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    {getStatusOptions().map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                  <div
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                      {
+                        "bg-green-100 text-green-800":
+                          appointment.status === AppointmentStatus.COMPLETED,
+                        "bg-yellow-100 text-yellow-800":
+                          appointment.status === AppointmentStatus.PENDING,
+                        "bg-blue-100 text-blue-800":
+                          appointment.status === AppointmentStatus.SCHEDULED,
+                        "bg-red-100 text-red-800":
+                          appointment.status === AppointmentStatus.CANCELLED,
+                      },
+                    )}
+                  >
+                    {appointment.status}
+                  </div>
+                </fetcher.Form>
               </div>
 
               <div className="border rounded-lg p-4 mt-4">
@@ -151,24 +327,34 @@ export default function AppointmentView() {
                     <Label className="text-muted-foreground">Phone</Label>
                     <p>{appointment.patient.phoneNo}</p>
                   </div>
+                  <div>
+                    <Label className="text-muted-foreground">Date of Birth</Label>
+                    <p>{format(new Date(appointment.patient.dob), "PPP")}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Address</Label>
+                    <p>
+                      {appointment.patient.street}, {appointment.patient.city},{" "}
+                      {appointment.patient.state}, {appointment.patient.zip}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="notes" className="w-full">
-          <TabsList>
-            <TabsTrigger value="notes">Notes & Status</TabsTrigger>
-            <TabsTrigger value="mealplan">Meal Plan</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="notes" className="space-y-4">
+        {appointment.status === AppointmentStatus.SCHEDULED && (
+          <div className="space-y-6">
             <Card>
-              <CardContent className="pt-6">
-                <form ref={formRef} method="post" className="space-y-4">
+              <CardHeader>
+                <CardTitle>Appointment Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <fetcher.Form ref={formRef} method="post" className="space-y-4">
+                  <input type="hidden" name="intent" value="update_notes" />
                   <div className="space-y-2">
-                    <Label htmlFor="notes">Appointment Notes</Label>
+                    <Label htmlFor="notes">Notes</Label>
                     <Textarea
                       id="notes"
                       name="notes"
@@ -178,58 +364,201 @@ export default function AppointmentView() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <select
-                      id="status"
-                      name="status"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      defaultValue={appointment.status}
-                    >
-                      <option value={AppointmentStatus.PENDING}>Pending</option>
-                      <option value={AppointmentStatus.COMPLETED}>Completed</option>
-                      <option value={AppointmentStatus.CANCELLED}>Cancelled</option>
-                    </select>
-                  </div>
-
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : "Save Changes"}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-fit bg-green-100 hover:bg-green-200 text-green-800"
+                  >
+                    {isSubmitting ? "Saving..." : "Save Notes"}
                   </Button>
-                </form>
+                </fetcher.Form>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="mealplan">
             <Card>
-              <CardContent className="pt-6">
-                <form method="post" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="mealPlan">Weekly Meal Plan</Label>
-                    <Textarea
-                      id="mealPlan"
-                      name="mealPlan"
-                      placeholder="Enter detailed meal plan with daily schedule, calories, water intake, etc..."
-                      defaultValue={appointment.mealPlan?.plan || ""}
-                      className="min-h-[400px]"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Include daily schedule with food items, water intake goals, calorie counts,
-                      and special suggestions.
-                    </p>
-                  </div>
-
+              <CardHeader>
+                <CardTitle>Weekly Meal Plan</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <fetcher.Form
+                  method="post"
+                  className="space-y-6"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const meals = formatFormDataToMeals(formData);
+                    formData.set("meals", JSON.stringify(meals));
+                    formData.set("intent", "update_meal_plan");
+                    fetcher.submit(formData, { method: "post" });
+                  }}
+                >
+                  <input type="hidden" name="intent" value="update_meal_plan" />
                   <input type="hidden" name="notes" value={appointment.notes || ""} />
-                  <input type="hidden" name="status" value={appointment.status} />
 
-                  <Button type="submit" disabled={isSubmitting}>
+                  {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map((mealType) => (
+                    <div key={mealType} className="space-y-4">
+                      <h3 className="font-medium">{mealType}</h3>
+                      <div className="grid gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`${mealType}-name`}>Meal Name</Label>
+                            <input
+                              type="text"
+                              id={`${mealType}-name`}
+                              name={`meals[${mealType}].name`}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              defaultValue={
+                                findMeal(appointment.mealPlan?.meal, mealType as MealType)?.name ||
+                                ""
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${mealType}-calories`}>Calories</Label>
+                            <input
+                              type="number"
+                              id={`${mealType}-calories`}
+                              name={`meals[${mealType}].calories`}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              defaultValue={
+                                findMeal(appointment.mealPlan?.meal, mealType as MealType)
+                                  ?.calories || ""
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${mealType}-protein`}>Protein (g)</Label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              id={`${mealType}-protein`}
+                              name={`meals[${mealType}].protein`}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              defaultValue={
+                                findMeal(appointment.mealPlan?.meal, mealType as MealType)
+                                  ?.protein || ""
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${mealType}-carbs`}>Carbs (g)</Label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              id={`${mealType}-carbs`}
+                              name={`meals[${mealType}].carbs`}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              defaultValue={
+                                findMeal(appointment.mealPlan?.meal, mealType as MealType)?.carbs ||
+                                ""
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${mealType}-fats`}>Fats (g)</Label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              id={`${mealType}-fats`}
+                              name={`meals[${mealType}].fats`}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              defaultValue={
+                                findMeal(appointment.mealPlan?.meal, mealType as MealType)?.fats ||
+                                ""
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`${mealType}-foods`}>Suggested Foods</Label>
+                          <Textarea
+                            id={`${mealType}-foods`}
+                            name={`meals[${mealType}].foods`}
+                            className="min-h-[100px]"
+                            defaultValue={
+                              findMeal(
+                                appointment.mealPlan?.meal,
+                                mealType as MealType,
+                              )?.foods.join(", ") || ""
+                            }
+                            placeholder="Enter foods you wanna suggest to the patient."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-fit bg-green-100 hover:bg-green-200 text-green-800"
+                  >
                     {isSubmitting ? "Saving..." : "Save Meal Plan"}
                   </Button>
-                </form>
+                </fetcher.Form>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Health Metrics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <fetcher.Form method="post" className="space-y-4">
+                    <input type="hidden" name="intent" value="update_health_metrics" />
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="waterIntake">Water Intake (L)</Label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          id="waterIntake"
+                          name="waterIntake"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          placeholder="Enter water intake in liters"
+                          defaultValue={appointment.healthMetrics?.[0]?.waterIntake || ""}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="calories">Calories to consume</Label>
+                        <input
+                          type="number"
+                          id="calories"
+                          name="calories"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          placeholder="Enter calories consumed"
+                          defaultValue={appointment.healthMetrics?.[0]?.calories || ""}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="healthNotes">Notes</Label>
+                      <Textarea
+                        id="healthNotes"
+                        name="notes"
+                        className="min-h-[100px]"
+                        placeholder="Enter any health-related notes, observations, or concerns..."
+                        defaultValue={appointment.healthMetrics?.[0]?.notes || ""}
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-fit bg-green-100 hover:bg-green-200 text-green-800"
+                    >
+                      {isSubmitting ? "Saving..." : "Save Health Metrics"}
+                    </Button>
+                  </fetcher.Form>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

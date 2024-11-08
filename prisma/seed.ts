@@ -8,17 +8,16 @@ const db = new PrismaClient();
 async function cleanup() {
   console.time("🧹 Cleaned up the database...");
 
-  await db.passwordReset.deleteMany();
-  await db.user.deleteMany();
-  await db.appointment.deleteMany();
-  await db.recipes.deleteMany();
-  await db.ingredient.deleteMany();
-  await db.step.deleteMany();
   await db.healthMetric.deleteMany();
   await db.meal.deleteMany();
   await db.mealPlan.deleteMany();
+  await db.passwordReset.deleteMany();
   await db.doctorAvailability.deleteMany();
-  await db.patientMealPlan.deleteMany();
+  await db.appointment.deleteMany();
+  await db.ingredient.deleteMany();
+  await db.step.deleteMany();
+  await db.recipes.deleteMany();
+  await db.user.deleteMany();
 
   console.timeEnd("🧹 Cleaned up the database...");
 }
@@ -205,7 +204,7 @@ async function createAppointment() {
     throw new Error("Doctor or patient not found");
   }
 
-  const appointment = await db.appointment.create({
+  await db.appointment.create({
     data: {
       doctorId: doctor.id,
       patientId: patient.id,
@@ -215,68 +214,51 @@ async function createAppointment() {
       startTime: new Date("2024-03-15T10:00:00Z"),
       endTime: new Date("2024-03-15T11:00:00Z"),
       doctorNotes: "Patient shows good progress",
-    },
-  });
-
-  const mealPlan = await db.mealPlan.create({
-    data: {
-      plan: JSON.stringify({
-        name: "Weight Loss Meal Plan",
-        description: "A balanced meal plan for healthy weight loss",
-        calories: 2000,
-        protein: 150,
-        carbs: 200,
-        fats: 67,
-      }),
-      appointmentId: appointment.id,
-      userId: doctor.id,
-      meal: {
-        create: [
-          {
-            name: "Healthy Breakfast",
-            type: "BREAKFAST",
-            calories: 500,
-            protein: 30,
-            carbs: 60,
-            fats: 20,
-            foods: ["Oatmeal", "Banana", "Greek Yogurt"],
+      mealPlan: {
+        create: {
+          plan: JSON.stringify({
+            name: "Weight Loss Meal Plan",
+            description: "A balanced meal plan for healthy weight loss",
+            calories: 2000,
+            protein: 150,
+            carbs: 200,
+            fats: 67,
+          }),
+          userId: doctor.id,
+          meal: {
+            create: [
+              {
+                name: "Healthy Breakfast",
+                type: "BREAKFAST",
+                calories: 500,
+                protein: 30,
+                carbs: 60,
+                fats: 20,
+                foods: ["Oatmeal", "Banana", "Greek Yogurt"],
+              },
+              {
+                name: "Light Lunch",
+                type: "LUNCH",
+                calories: 700,
+                protein: 45,
+                carbs: 70,
+                fats: 25,
+                foods: ["Grilled Chicken", "Brown Rice", "Steamed Vegetables"],
+              },
+              {
+                name: "Nutritious Dinner",
+                type: "DINNER",
+                calories: 600,
+                protein: 35,
+                carbs: 50,
+                fats: 22,
+                foods: ["Salmon", "Quinoa", "Roasted Vegetables"],
+              },
+            ],
           },
-          {
-            name: "Light Lunch",
-            type: "LUNCH",
-            calories: 700,
-            protein: 45,
-            carbs: 70,
-            fats: 25,
-            foods: ["Grilled Chicken", "Brown Rice", "Steamed Vegetables"],
-          },
-          {
-            name: "Nutritious Dinner",
-            type: "DINNER",
-            calories: 600,
-            protein: 35,
-            carbs: 50,
-            fats: 22,
-            foods: ["Salmon", "Quinoa", "Roasted Vegetables"],
-          },
-        ],
+        },
       },
     },
-  });
-
-  const patientMealPlan = await db.patientMealPlan.create({
-    data: {
-      patientId: patient.id,
-      mealPlanId: mealPlan.id,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      notes: "Initial meal plan",
-    },
-  });
-
-  await db.appointment.update({
-    where: { id: appointment.id },
-    data: { prescribedMealPlanId: patientMealPlan.id },
   });
 
   console.timeEnd("📅 Created appointment...");
@@ -310,17 +292,18 @@ async function createHealthMetrics() {
   console.time("📊 Created health metrics...");
 
   const patient = await db.user.findFirst({ where: { role: UserRole.USER } });
-  if (!patient) {
-    throw new Error("Patient not found");
+  const appointment = await db.appointment.findFirst();
+
+  if (!patient || !appointment) {
+    throw new Error("Patient or appointment not found");
   }
 
   await db.healthMetric.create({
     data: {
       userId: patient.id,
-      date: new Date(),
+      appointmentId: appointment.id,
       waterIntake: 2.5,
       calories: 2000,
-      weight: 70.5,
       notes: "Feeling good today",
     },
   });
