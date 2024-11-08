@@ -41,6 +41,11 @@ model User {
 
   passwordResets PasswordReset[]
 
+  availability      DoctorAvailability[]
+  mealPlans         MealPlan[]
+  assignedMealPlans PatientMealPlan[]
+  healthMetrics     HealthMetric[]
+
   @@map("user")
 }
 
@@ -116,13 +121,109 @@ model Appointment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  doctorNotes String?
+
+  prescribedMealPlan   PatientMealPlan? @relation(fields: [prescribedMealPlanId], references: [id])
+  prescribedMealPlanId String?
+
   @@map("appointments")
+}
+
+model DoctorAvailability {
+  id          String   @id @default(uuid())
+  doctor      User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  doctorId    String
+  dayOfWeek   Int
+  startTime   DateTime
+  endTime     DateTime
+  isAvailable Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("doctor_availability")
+}
+
+model MealPlan {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  creator   User   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId String
+
+  calories Int
+  protein  Float
+  carbs    Float
+  fats     Float
+
+  meals       Meal[]
+  assignments PatientMealPlan[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("meal_plans")
+}
+
+model Meal {
+  id       String   @id @default(uuid())
+  name     String
+  type     MealType
+  calories Int
+  protein  Float
+  carbs    Float
+  fats     Float
+  foods    String[]
+
+  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  mealPlanId String
+
+  @@map("meals")
+}
+
+model PatientMealPlan {
+  id        String   @id @default(uuid())
+  startDate DateTime
+  endDate   DateTime
+
+  patient   User   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId String
+
+  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  mealPlanId String
+
+  appointments Appointment[]
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("patient_meal_plans")
+}
+
+model HealthMetric {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  date        DateTime
+  waterIntake Float?
+  calories    Int?
+  weight      Float?
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("health_metrics")
 }
 
 enum UserRole {
   ADMIN
   USER
-  HEALTHCARE_PROFESSIONAL
+  DOCTOR
 }
 
 enum AppointmentStatus {
@@ -130,4 +231,11 @@ enum AppointmentStatus {
   SCHEDULED
   COMPLETED
   CANCELLED
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
 }

@@ -34,7 +34,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   const doctor = await db.user.findUnique({
     where: {
       id,
-      role: UserRole.HEALTHCARE_PROFESSIONAL,
+      role: UserRole.DOCTOR,
     },
   });
 

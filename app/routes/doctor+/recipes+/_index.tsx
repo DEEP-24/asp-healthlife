@@ -49,7 +49,7 @@ export default function AdminRecipes() {
                     <TableCell>{recipe.cookingTime}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Link to={`/healthcare-professional/recipes/${recipe.id}/view`}>
+                        <Link to={`/doctor/recipes/${recipe.id}/view`}>
                           <Button variant="outline" size="sm">
                             View
                           </Button>

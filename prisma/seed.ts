@@ -14,6 +14,11 @@ async function cleanup() {
   await db.recipes.deleteMany();
   await db.ingredient.deleteMany();
   await db.step.deleteMany();
+  await db.healthMetric.deleteMany();
+  await db.meal.deleteMany();
+  await db.mealPlan.deleteMany();
+  await db.doctorAvailability.deleteMany();
+  await db.patientMealPlan.deleteMany();
 
   console.timeEnd("🧹 Cleaned up the database...");
 }
@@ -65,10 +70,27 @@ async function createUsers() {
       state: "NY",
       zip: "10001",
       dob: new Date("1980-03-15"),
-      email: "dr.john@app.com",
+      email: "doctor@app.com",
       password: await createHash("password"),
-      role: UserRole.HEALTHCARE_PROFESSIONAL,
+      role: UserRole.DOCTOR,
       specialty: "Cardiology",
+    },
+  });
+
+  await db.user.create({
+    data: {
+      firstName: "Dr. Jane",
+      lastName: "Doe",
+      email: "doctor2@app.com",
+      password: await createHash("password"),
+      role: UserRole.DOCTOR,
+      specialty: "Pediatrics",
+      street: "456 Medical Avenue",
+      phoneNo: "(987) 654-3210",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+      dob: new Date("1980-03-15"),
     },
   });
 
@@ -176,7 +198,7 @@ async function createRecipes() {
 async function createAppointment() {
   console.time("📅 Created appointment...");
 
-  const doctor = await db.user.findFirst({ where: { role: UserRole.HEALTHCARE_PROFESSIONAL } });
+  const doctor = await db.user.findFirst({ where: { role: UserRole.DOCTOR } });
   const patient = await db.user.findFirst({ where: { role: UserRole.USER } });
 
   if (!doctor || !patient) {
@@ -198,6 +220,109 @@ async function createAppointment() {
   console.timeEnd("📅 Created appointment...");
 }
 
+async function createDoctorAvailability() {
+  console.time("📅 Created doctor availability...");
+
+  const doctor = await db.user.findFirst({ where: { role: UserRole.DOCTOR } });
+  if (!doctor) {
+    throw new Error("Doctor not found");
+  }
+
+  // Create weekly availability for the doctor
+  for (let day = 0; day < 7; day++) {
+    await db.doctorAvailability.create({
+      data: {
+        doctorId: doctor.id,
+        dayOfWeek: day,
+        startTime: new Date(2024, 0, 1, 9, 0), // 9 AM
+        endTime: new Date(2024, 0, 1, 17, 0), // 5 PM
+        isAvailable: true,
+      },
+    });
+  }
+
+  console.timeEnd("📅 Created doctor availability...");
+}
+
+async function createMealPlansAndAssignments() {
+  console.time("🍽️ Created meal plans...");
+
+  const doctor = await db.user.findFirst({ where: { role: UserRole.DOCTOR } });
+  const patient = await db.user.findFirst({ where: { role: UserRole.USER } });
+  if (!doctor || !patient) {
+    throw new Error("Doctor or patient not found");
+  }
+
+  const mealPlan = await db.mealPlan.create({
+    data: {
+      name: "Weight Loss Meal Plan",
+      description: "A balanced meal plan for healthy weight loss",
+      creatorId: doctor.id,
+      calories: 2000,
+      protein: 150,
+      carbs: 200,
+      fats: 67,
+      meals: {
+        create: [
+          {
+            name: "Healthy Breakfast",
+            type: "BREAKFAST",
+            calories: 500,
+            protein: 30,
+            carbs: 60,
+            fats: 20,
+            foods: ["Oatmeal", "Banana", "Greek Yogurt"],
+          },
+          {
+            name: "Light Lunch",
+            type: "LUNCH",
+            calories: 700,
+            protein: 45,
+            carbs: 70,
+            fats: 25,
+            foods: ["Grilled Chicken", "Brown Rice", "Steamed Vegetables"],
+          },
+        ],
+      },
+    },
+  });
+
+  // Assign meal plan to patient
+  await db.patientMealPlan.create({
+    data: {
+      patientId: patient.id,
+      mealPlanId: mealPlan.id,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      notes: "Initial meal plan",
+    },
+  });
+
+  console.timeEnd("🍽️ Created meal plans...");
+}
+
+async function createHealthMetrics() {
+  console.time("📊 Created health metrics...");
+
+  const patient = await db.user.findFirst({ where: { role: UserRole.USER } });
+  if (!patient) {
+    throw new Error("Patient not found");
+  }
+
+  await db.healthMetric.create({
+    data: {
+      userId: patient.id,
+      date: new Date(),
+      waterIntake: 2.5,
+      calories: 2000,
+      weight: 70.5,
+      notes: "Feeling good today",
+    },
+  });
+
+  console.timeEnd("📊 Created health metrics...");
+}
+
 async function seed() {
   console.log("🌱 Seeding...\n");
 
@@ -206,6 +331,9 @@ async function seed() {
   await createUsers();
   await createRecipes();
   await createAppointment();
+  await createDoctorAvailability();
+  await createMealPlansAndAssignments();
+  await createHealthMetrics();
 
   console.timeEnd("🌱 Database has been seeded");
 }

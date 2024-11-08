@@ -23,12 +23,10 @@ export default function AdminRecipes() {
     <>
       <PageHeading title="Recipes" />
       <div className="flex items-center justify-end mt-5 pr-10">
-        <Link to="/admin/recipes/new">
-          <Button className="bg-green-100 hover:bg-green-200 text-black hover:text-green-900">
-            <PlusIcon className="w-4 h-4 mr-1" />
-            <Link to="/admin/recipes/new">Add Recipe</Link>
-          </Button>
-        </Link>
+        <Button className="bg-green-100 hover:bg-green-200 text-black hover:text-green-900">
+          <PlusIcon className="w-4 h-4 mr-1" />
+          <Link to="/admin/recipes/new">Add Recipe</Link>
+        </Button>
       </div>
 
       {recipes.length > 0 ? (

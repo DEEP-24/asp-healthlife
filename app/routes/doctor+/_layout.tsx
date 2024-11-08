@@ -2,7 +2,13 @@ import { type LoaderFunctionArgs, json } from "@remix-run/node";
 import { NavLink, Outlet, useLocation } from "@remix-run/react";
 import { Avatar, AvatarFallback } from "components/ui/avatar";
 import { Button } from "components/ui/button";
-import { ActivityIcon, CookingPotIcon, HeartPulseIcon, LogOutIcon } from "lucide-react";
+import {
+  ActivityIcon,
+  CalendarClockIcon,
+  CookingPotIcon,
+  HeartPulseIcon,
+  LogOutIcon,
+} from "lucide-react";
 
 import { requireUserId, validateUserRole } from "~/lib/session.server";
 import { UserRole } from "~/utils/enums";
@@ -11,7 +17,7 @@ import { getInitials } from "~/utils/misc";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requireUserId(request);
-  await validateUserRole(request, [UserRole.HEALTHCARE_PROFESSIONAL]);
+  await validateUserRole(request, [UserRole.DOCTOR]);
   return json({});
 };
 
@@ -23,14 +29,19 @@ type SidebarLinkType = {
 
 const sidebarLinks: SidebarLinkType[] = [
   {
-    to: "/healthcare-professional/appointments",
+    to: "/doctor/appointments",
     icon: ActivityIcon,
     label: "Appointments",
   },
   {
-    to: "/healthcare-professional/recipes",
+    to: "/doctor/recipes",
     icon: CookingPotIcon,
     label: "Diet Recipes",
+  },
+  {
+    to: "/doctor/availability",
+    icon: CalendarClockIcon,
+    label: "Availability",
   },
 ];
 

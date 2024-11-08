@@ -4,7 +4,7 @@ import { UserRole } from "~/utils/enums";
 export async function getDoctors() {
   const doctors = await db.user.findMany({
     where: {
-      role: UserRole.HEALTHCARE_PROFESSIONAL,
+      role: UserRole.DOCTOR,
     },
   });
   return doctors;

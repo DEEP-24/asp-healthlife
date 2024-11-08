@@ -2,7 +2,7 @@
 export const UserRole = {
   ADMIN: "ADMIN",
   USER: "USER",
-  HEALTHCARE_PROFESSIONAL: "HEALTHCARE_PROFESSIONAL",
+  DOCTOR: "DOCTOR",
 } as const;
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
@@ -15,3 +15,12 @@ export const AppointmentStatus = {
 } as const;
 
 export type AppointmentStatus = (typeof AppointmentStatus)[keyof typeof AppointmentStatus];
+
+export const MealType = {
+  BREAKFAST: "BREAKFAST",
+  LUNCH: "LUNCH",
+  DINNER: "DINNER",
+  SNACK: "SNACK",
+} as const;
+
+export type MealType = (typeof MealType)[keyof typeof MealType];

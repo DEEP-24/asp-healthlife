@@ -50,7 +50,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       ...fields,
       dob: new Date(fields.dob),
       password: await createHash(fields.password),
-      role: UserRole.HEALTHCARE_PROFESSIONAL,
+      role: UserRole.DOCTOR,
     },
   });
 

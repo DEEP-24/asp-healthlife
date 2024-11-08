@@ -149,9 +149,7 @@ export default function Register() {
               >
                 <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-md">
                   <TabsTrigger value={UserRole.USER}>User</TabsTrigger>
-                  <TabsTrigger value={UserRole.HEALTHCARE_PROFESSIONAL}>
-                    HealthCare Professional
-                  </TabsTrigger>
+                  <TabsTrigger value={UserRole.DOCTOR}>Doctor</TabsTrigger>
                 </TabsList>
               </Tabs>
               <input type="hidden" name="role" value={role} />

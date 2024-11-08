@@ -43,7 +43,7 @@ type Dietician = {
 export const loader = async () => {
   const dieticians = await db.user.findMany({
     where: {
-      role: UserRole.HEALTHCARE_PROFESSIONAL,
+      role: UserRole.DOCTOR,
     },
     select: {
       id: true,
