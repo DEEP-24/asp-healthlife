@@ -168,17 +168,18 @@ export default function EditAvailability() {
               {weekDays.map((day) => (
                 <div key={day.value} className="p-4 rounded-lg border border-gray-200">
                   <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-y-0">
-                    <div className="flex items-center space-x-4">
-                      <Label className="text-lg font-semibold w-[100px]">{day.label}</Label>
+                    <div className="w-[120px]">
+                      <Label className="text-lg font-medium">{day.label}</Label>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 mx-4">
-                      <div className="space-y-2 w-[160px]">
-                        <Label htmlFor={`startTime-${day.value}`}>Start Time</Label>
+                    <div className="flex-1 flex items-center justify-end space-x-6">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">Start Time</span>
                         <Input
                           id={`startTime-${day.value}`}
                           type="time"
                           name={`startTime-${day.value}`}
+                          className="w-[130px]"
                           defaultValue={
                             availabilityMap.get(Number(day.value))
                               ? format(
@@ -189,12 +190,14 @@ export default function EditAvailability() {
                           }
                         />
                       </div>
-                      <div className="space-y-2 w-[160px]">
-                        <Label htmlFor={`endTime-${day.value}`}>End Time</Label>
+
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">End Time</span>
                         <Input
                           id={`endTime-${day.value}`}
                           type="time"
                           name={`endTime-${day.value}`}
+                          className="w-[130px]"
                           defaultValue={
                             availabilityMap.get(Number(day.value))
                               ? format(
@@ -205,14 +208,16 @@ export default function EditAvailability() {
                           }
                         />
                       </div>
-                    </div>
 
-                    <div className="flex items-center space-x-2 min-w-[140px] justify-end">
-                      <Switch
-                        name={`isAvailable-${day.value}`}
-                        defaultChecked={availabilityMap.get(Number(day.value))?.isAvailable ?? true}
-                      />
-                      <Label>Available</Label>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          name={`isAvailable-${day.value}`}
+                          defaultChecked={
+                            availabilityMap.get(Number(day.value))?.isAvailable ?? true
+                          }
+                        />
+                        <span className="text-sm">Available</span>
+                      </div>
                     </div>
                   </div>
                 </div>
