@@ -152,3 +152,46 @@ export const AppointmentSchema = z.object({
   startTime: z.string().trim().min(1, "Start time is required"),
   endTime: z.string().trim().min(1, "End time is required"),
 });
+
+export const DoctorSchema = z
+  .object({
+    email: z.string().email(),
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string().min(1, "Confirm password is required"),
+    street: z.string().min(1, "Street is required"),
+    city: z.string().min(1, "City is required"),
+    state: z.string().min(1, "State is required"),
+    zip: z.string().min(5, "ZIP code is required"),
+    dob: z
+      .string()
+      .min(1, "Date of birth is required")
+      .refine((date) => !Number.isNaN(Date.parse(date)), {
+        message: "Invalid date format",
+      }),
+    phoneNo: z.string().min(10, "Phone number is required"),
+    specialty: z.string().min(1, "Specialty is required"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+export const EditDoctorSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  street: z.string().min(1, "Street is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zip: z.string().min(5, "ZIP code is required"),
+  dob: z
+    .string()
+    .min(1, "Date of birth is required")
+    .refine((date) => !Number.isNaN(Date.parse(date)), {
+      message: "Invalid date format",
+    }),
+  phoneNo: z.string().min(10, "Phone number is required"),
+  specialty: z.string().min(1, "Specialty is required"),
+});

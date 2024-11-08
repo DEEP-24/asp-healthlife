@@ -68,6 +68,7 @@ async function createUsers() {
       email: "dr.john@app.com",
       password: await createHash("password"),
       role: UserRole.HEALTHCARE_PROFESSIONAL,
+      specialty: "Cardiology",
     },
   });
 
