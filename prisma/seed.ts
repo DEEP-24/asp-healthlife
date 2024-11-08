@@ -205,7 +205,7 @@ async function createAppointment() {
     throw new Error("Doctor or patient not found");
   }
 
-  await db.appointment.create({
+  const appointment = await db.appointment.create({
     data: {
       doctorId: doctor.id,
       patientId: patient.id,
@@ -214,7 +214,69 @@ async function createAppointment() {
       notes: "Initial consultation",
       startTime: new Date("2024-03-15T10:00:00Z"),
       endTime: new Date("2024-03-15T11:00:00Z"),
+      doctorNotes: "Patient shows good progress",
     },
+  });
+
+  const mealPlan = await db.mealPlan.create({
+    data: {
+      plan: JSON.stringify({
+        name: "Weight Loss Meal Plan",
+        description: "A balanced meal plan for healthy weight loss",
+        calories: 2000,
+        protein: 150,
+        carbs: 200,
+        fats: 67,
+      }),
+      appointmentId: appointment.id,
+      userId: doctor.id,
+      meal: {
+        create: [
+          {
+            name: "Healthy Breakfast",
+            type: "BREAKFAST",
+            calories: 500,
+            protein: 30,
+            carbs: 60,
+            fats: 20,
+            foods: ["Oatmeal", "Banana", "Greek Yogurt"],
+          },
+          {
+            name: "Light Lunch",
+            type: "LUNCH",
+            calories: 700,
+            protein: 45,
+            carbs: 70,
+            fats: 25,
+            foods: ["Grilled Chicken", "Brown Rice", "Steamed Vegetables"],
+          },
+          {
+            name: "Nutritious Dinner",
+            type: "DINNER",
+            calories: 600,
+            protein: 35,
+            carbs: 50,
+            fats: 22,
+            foods: ["Salmon", "Quinoa", "Roasted Vegetables"],
+          },
+        ],
+      },
+    },
+  });
+
+  const patientMealPlan = await db.patientMealPlan.create({
+    data: {
+      patientId: patient.id,
+      mealPlanId: mealPlan.id,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      notes: "Initial meal plan",
+    },
+  });
+
+  await db.appointment.update({
+    where: { id: appointment.id },
+    data: { prescribedMealPlanId: patientMealPlan.id },
   });
 
   console.timeEnd("📅 Created appointment...");
@@ -242,63 +304,6 @@ async function createDoctorAvailability() {
   }
 
   console.timeEnd("📅 Created doctor availability...");
-}
-
-async function createMealPlansAndAssignments() {
-  console.time("🍽️ Created meal plans...");
-
-  const doctor = await db.user.findFirst({ where: { role: UserRole.DOCTOR } });
-  const patient = await db.user.findFirst({ where: { role: UserRole.USER } });
-  if (!doctor || !patient) {
-    throw new Error("Doctor or patient not found");
-  }
-
-  const mealPlan = await db.mealPlan.create({
-    data: {
-      name: "Weight Loss Meal Plan",
-      description: "A balanced meal plan for healthy weight loss",
-      creatorId: doctor.id,
-      calories: 2000,
-      protein: 150,
-      carbs: 200,
-      fats: 67,
-      meals: {
-        create: [
-          {
-            name: "Healthy Breakfast",
-            type: "BREAKFAST",
-            calories: 500,
-            protein: 30,
-            carbs: 60,
-            fats: 20,
-            foods: ["Oatmeal", "Banana", "Greek Yogurt"],
-          },
-          {
-            name: "Light Lunch",
-            type: "LUNCH",
-            calories: 700,
-            protein: 45,
-            carbs: 70,
-            fats: 25,
-            foods: ["Grilled Chicken", "Brown Rice", "Steamed Vegetables"],
-          },
-        ],
-      },
-    },
-  });
-
-  // Assign meal plan to patient
-  await db.patientMealPlan.create({
-    data: {
-      patientId: patient.id,
-      mealPlanId: mealPlan.id,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      notes: "Initial meal plan",
-    },
-  });
-
-  console.timeEnd("🍽️ Created meal plans...");
 }
 
 async function createHealthMetrics() {
@@ -332,7 +337,6 @@ async function seed() {
   await createRecipes();
   await createAppointment();
   await createDoctorAvailability();
-  await createMealPlansAndAssignments();
   await createHealthMetrics();
 
   console.timeEnd("🌱 Database has been seeded");

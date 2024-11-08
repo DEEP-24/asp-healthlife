@@ -111,6 +111,7 @@ model Appointment {
   endTime   DateTime
   status    AppointmentStatus @default(SCHEDULED)
   notes     String?
+  mealPlan  MealPlan?
 
   patient   User   @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   patientId String
@@ -145,25 +146,19 @@ model DoctorAvailability {
 }
 
 model MealPlan {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-
-  creator   User   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  creatorId String
-
-  calories Int
-  protein  Float
-  carbs    Float
-  fats     Float
-
-  meals       Meal[]
-  assignments PatientMealPlan[]
-
+  id        String   @id @default(cuid())
+  plan      String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("meal_plans")
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  appointmentId String      @unique
+
+  User   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  meal            Meal[]
+  PatientMealPlan PatientMealPlan[]
 }
 
 model Meal {

@@ -1,10 +1,11 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json, useLoaderData } from "@remix-run/react";
+import { json, Link, useLoaderData } from "@remix-run/react";
+import { Button } from "components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
+import { Calendar, Clock, EyeIcon, User } from "lucide-react";
 import PageHeading from "~/components/page-heading";
 import { getAppointments } from "~/lib/appointment.server";
 import { requireUserId } from "~/lib/session.server";
-import { Calendar, Clock, User } from "lucide-react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const userId = await requireUserId(request);
@@ -51,12 +52,12 @@ export default function Appointments() {
                   <span className="font-medium">Time:</span>
                   {formatTime(appointment.startTime)} to {formatTime(appointment.endTime)}
                 </p>
-                {appointment.notes && (
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-sm font-medium">Notes:</p>
-                    <p className="text-sm mt-1 text-gray-600">{appointment.notes}</p>
-                  </div>
-                )}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <Button className="w-full bg-green-100 hover:bg-green-200 text-green-800">
+                  <EyeIcon className="h-4 w-4" />
+                  <Link to={`/doctor/appointments/${appointment.id}`}>View</Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
