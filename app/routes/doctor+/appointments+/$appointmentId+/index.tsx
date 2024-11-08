@@ -268,28 +268,33 @@ export default function AppointmentView() {
                     {format(new Date(appointment.endTime), "h:mm a")}
                   </span>
                 </div>
-                <fetcher.Form method="post" className="flex items-center gap-2">
-                  <select
-                    name="status"
-                    className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                    defaultValue={appointment.status}
-                    onChange={(e) => {
-                      fetcher.submit(
-                        {
-                          status: e.target.value,
-                          intent: "update_status",
-                        },
-                        { method: "post" },
-                      );
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    {getStatusOptions().map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
+                <div className="flex items-center gap-2">
+                  {appointment.status !== AppointmentStatus.CANCELLED &&
+                  appointment.status !== AppointmentStatus.COMPLETED ? (
+                    <fetcher.Form method="post" className="flex items-center gap-2">
+                      <select
+                        name="status"
+                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                        defaultValue={appointment.status}
+                        onChange={(e) => {
+                          fetcher.submit(
+                            {
+                              status: e.target.value,
+                              intent: "update_status",
+                            },
+                            { method: "post" },
+                          );
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        {getStatusOptions().map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </fetcher.Form>
+                  ) : null}
                   <div
                     className={cn(
                       "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
@@ -307,7 +312,7 @@ export default function AppointmentView() {
                   >
                     {appointment.status}
                   </div>
-                </fetcher.Form>
+                </div>
               </div>
 
               <div className="border rounded-lg p-4 mt-4">
@@ -347,34 +352,44 @@ export default function AppointmentView() {
           </CardContent>
         </Card>
 
-        {appointment.status === AppointmentStatus.SCHEDULED && (
+        {(appointment.status === AppointmentStatus.SCHEDULED ||
+          appointment.status === AppointmentStatus.COMPLETED) && (
           <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Appointment Notes</CardTitle>
               </CardHeader>
               <CardContent>
-                <fetcher.Form ref={formRef} method="post" className="space-y-4">
-                  <input type="hidden" name="intent" value="update_notes" />
+                {appointment.status === AppointmentStatus.COMPLETED ? (
                   <div className="space-y-2">
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      name="notes"
-                      placeholder="Enter appointment notes..."
-                      defaultValue={appointment.notes || ""}
-                      className="min-h-[150px]"
-                    />
+                    <Label>Notes</Label>
+                    <div className="min-h-[150px] p-3 rounded-md border bg-muted">
+                      {appointment.notes || "No notes added"}
+                    </div>
                   </div>
+                ) : (
+                  <fetcher.Form ref={formRef} method="post" className="space-y-4">
+                    <input type="hidden" name="intent" value="update_notes" />
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notes</Label>
+                      <Textarea
+                        id="notes"
+                        name="notes"
+                        placeholder="Enter appointment notes..."
+                        defaultValue={appointment.notes || ""}
+                        className="min-h-[150px]"
+                      />
+                    </div>
 
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-fit bg-green-100 hover:bg-green-200 text-green-800"
-                  >
-                    {isSubmitting ? "Saving..." : "Save Notes"}
-                  </Button>
-                </fetcher.Form>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-fit bg-green-100 hover:bg-green-200 text-green-800"
+                    >
+                      {isSubmitting ? "Saving..." : "Save Notes"}
+                    </Button>
+                  </fetcher.Form>
+                )}
               </CardContent>
             </Card>
 
@@ -383,122 +398,170 @@ export default function AppointmentView() {
                 <CardTitle>Weekly Meal Plan</CardTitle>
               </CardHeader>
               <CardContent>
-                <fetcher.Form
-                  method="post"
-                  className="space-y-6"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    const meals = formatFormDataToMeals(formData);
-                    formData.set("meals", JSON.stringify(meals));
-                    formData.set("intent", "update_meal_plan");
-                    fetcher.submit(formData, { method: "post" });
-                  }}
-                >
-                  <input type="hidden" name="intent" value="update_meal_plan" />
-                  <input type="hidden" name="notes" value={appointment.notes || ""} />
-
-                  {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map((mealType) => (
-                    <div key={mealType} className="space-y-4">
-                      <h3 className="font-medium">{mealType}</h3>
-                      <div className="grid gap-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor={`${mealType}-name`}>Meal Name</Label>
-                            <input
-                              type="text"
-                              id={`${mealType}-name`}
-                              name={`meals[${mealType}].name`}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              defaultValue={
-                                findMeal(appointment.mealPlan?.meal, mealType as MealType)?.name ||
-                                ""
-                              }
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor={`${mealType}-calories`}>Calories</Label>
-                            <input
-                              type="number"
-                              id={`${mealType}-calories`}
-                              name={`meals[${mealType}].calories`}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              defaultValue={
-                                findMeal(appointment.mealPlan?.meal, mealType as MealType)
-                                  ?.calories || ""
-                              }
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor={`${mealType}-protein`}>Protein (g)</Label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              id={`${mealType}-protein`}
-                              name={`meals[${mealType}].protein`}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              defaultValue={
-                                findMeal(appointment.mealPlan?.meal, mealType as MealType)
-                                  ?.protein || ""
-                              }
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor={`${mealType}-carbs`}>Carbs (g)</Label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              id={`${mealType}-carbs`}
-                              name={`meals[${mealType}].carbs`}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              defaultValue={
-                                findMeal(appointment.mealPlan?.meal, mealType as MealType)?.carbs ||
-                                ""
-                              }
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor={`${mealType}-fats`}>Fats (g)</Label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              id={`${mealType}-fats`}
-                              name={`meals[${mealType}].fats`}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              defaultValue={
-                                findMeal(appointment.mealPlan?.meal, mealType as MealType)?.fats ||
-                                ""
-                              }
-                            />
-                          </div>
+                {appointment.status === AppointmentStatus.COMPLETED ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {appointment.mealPlan?.meal.map((meal) => (
+                      <div key={meal.id} className="border rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-4">
+                          <h3 className="font-medium text-lg">{meal.type}</h3>
+                          <span className="text-sm text-muted-foreground">({meal.name})</span>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${mealType}-foods`}>Suggested Foods</Label>
-                          <Textarea
-                            id={`${mealType}-foods`}
-                            name={`meals[${mealType}].foods`}
-                            className="min-h-[100px]"
-                            defaultValue={
-                              findMeal(
-                                appointment.mealPlan?.meal,
-                                mealType as MealType,
-                              )?.foods.join(", ") || ""
-                            }
-                            placeholder="Enter foods you wanna suggest to the patient."
-                          />
+
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Calories</span>
+                              <p className="font-medium">{meal.calories} cal</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Protein</span>
+                              <p className="font-medium">{meal.protein}g</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Carbs</span>
+                              <p className="font-medium">{meal.carbs}g</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Fats</span>
+                              <p className="font-medium">{meal.fats}g</p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="text-muted-foreground block mb-2">
+                              Suggested Foods
+                            </span>
+                            <div className="text-sm space-y-1">
+                              {meal.foods.map((food, index) => (
+                                // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                                <div key={index} className="text-sm">
+                                  • {food}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-fit bg-green-100 hover:bg-green-200 text-green-800"
+                    ))}
+                  </div>
+                ) : (
+                  <fetcher.Form
+                    method="post"
+                    className="space-y-6"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      const meals = formatFormDataToMeals(formData);
+                      formData.set("meals", JSON.stringify(meals));
+                      formData.set("intent", "update_meal_plan");
+                      fetcher.submit(formData, { method: "post" });
+                    }}
                   >
-                    {isSubmitting ? "Saving..." : "Save Meal Plan"}
-                  </Button>
-                </fetcher.Form>
+                    <input type="hidden" name="intent" value="update_meal_plan" />
+                    <input type="hidden" name="notes" value={appointment.notes || ""} />
+
+                    {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map((mealType) => (
+                      <div key={mealType} className="space-y-4">
+                        <h3 className="font-medium">{mealType}</h3>
+                        <div className="grid gap-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`${mealType}-name`}>Meal Name</Label>
+                              <input
+                                type="text"
+                                id={`${mealType}-name`}
+                                name={`meals[${mealType}].name`}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                defaultValue={
+                                  findMeal(appointment.mealPlan?.meal, mealType as MealType)
+                                    ?.name || ""
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`${mealType}-calories`}>Calories</Label>
+                              <input
+                                type="number"
+                                id={`${mealType}-calories`}
+                                name={`meals[${mealType}].calories`}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                defaultValue={
+                                  findMeal(appointment.mealPlan?.meal, mealType as MealType)
+                                    ?.calories || ""
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`${mealType}-protein`}>Protein (g)</Label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                id={`${mealType}-protein`}
+                                name={`meals[${mealType}].protein`}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                defaultValue={
+                                  findMeal(appointment.mealPlan?.meal, mealType as MealType)
+                                    ?.protein || ""
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`${mealType}-carbs`}>Carbs (g)</Label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                id={`${mealType}-carbs`}
+                                name={`meals[${mealType}].carbs`}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                defaultValue={
+                                  findMeal(appointment.mealPlan?.meal, mealType as MealType)
+                                    ?.carbs || ""
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`${mealType}-fats`}>Fats (g)</Label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                id={`${mealType}-fats`}
+                                name={`meals[${mealType}].fats`}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                defaultValue={
+                                  findMeal(appointment.mealPlan?.meal, mealType as MealType)
+                                    ?.fats || ""
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${mealType}-foods`}>Suggested Foods</Label>
+                            <Textarea
+                              id={`${mealType}-foods`}
+                              name={`meals[${mealType}].foods`}
+                              className="min-h-[100px]"
+                              defaultValue={
+                                findMeal(
+                                  appointment.mealPlan?.meal,
+                                  mealType as MealType,
+                                )?.foods.join(", ") || ""
+                              }
+                              placeholder="Enter foods you wanna suggest to the patient."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-fit bg-green-100 hover:bg-green-200 text-green-800"
+                    >
+                      {isSubmitting ? "Saving..." : "Save Meal Plan"}
+                    </Button>
+                  </fetcher.Form>
+                )}
               </CardContent>
             </Card>
 
@@ -507,7 +570,30 @@ export default function AppointmentView() {
                 <CardTitle>Health Metrics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                {appointment.status === AppointmentStatus.COMPLETED ? (
+                  <div className="space-y-4">
+                    {appointment.healthMetrics.map((metric) => (
+                      <div key={metric.id} className="border rounded-lg p-4">
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Water Intake Goal</span>
+                            <p className="font-medium">{metric.waterIntake}L per day</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Calorie Goal</span>
+                            <p className="font-medium">{metric.calories} cal per day</p>
+                          </div>
+                          {metric.notes && (
+                            <div>
+                              <span className="text-muted-foreground">Notes</span>
+                              <p className="mt-1">{metric.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
                   <fetcher.Form method="post" className="space-y-4">
                     <input type="hidden" name="intent" value="update_health_metrics" />
 
@@ -557,7 +643,7 @@ export default function AppointmentView() {
                       {isSubmitting ? "Saving..." : "Save Health Metrics"}
                     </Button>
                   </fetcher.Form>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

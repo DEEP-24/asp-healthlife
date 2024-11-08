@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, useFetcher, useLoaderData } from "@remix-run/react";
 import { Alert, AlertDescription } from "components/ui/alert";
 import { Avatar, AvatarFallback } from "components/ui/avatar";
@@ -47,6 +47,13 @@ type Dietician = {
     endTime: string;
     isAvailable: boolean;
   }[];
+  doctorAppointments: {
+    id: string;
+    date: Date;
+    startTime: Date;
+    endTime: Date;
+    status: AppointmentStatus;
+  }[];
 };
 
 // type DoctorAvailability = {
@@ -57,7 +64,9 @@ type Dietician = {
 //   isAvailable: boolean;
 // };
 
-export const loader = async () => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const userId = await requireUserId(request);
+
   const dieticians = await db.user.findMany({
     where: {
       role: UserRole.DOCTOR,
@@ -79,6 +88,21 @@ export const loader = async () => {
           startTime: true,
           endTime: true,
           isAvailable: true,
+        },
+      },
+      doctorAppointments: {
+        where: {
+          patientId: userId,
+          status: {
+            not: AppointmentStatus.CANCELLED,
+          },
+        },
+        select: {
+          id: true,
+          date: true,
+          startTime: true,
+          endTime: true,
+          status: true,
         },
       },
     },
@@ -350,6 +374,44 @@ export default function ContactPage() {
                       {dietician.city}, {dietician.state} {dietician.zip}
                     </address>
                   </div>
+
+                  {dietician.doctorAppointments.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                      <details className="text-sm">
+                        <summary className="font-medium cursor-pointer">
+                          Your Appointments ({dietician.doctorAppointments.length})
+                        </summary>
+                        <div className="mt-2 space-y-2">
+                          {dietician.doctorAppointments.map((apt) => (
+                            <div
+                              key={apt.id}
+                              className="p-2 bg-gray-50 rounded-lg text-xs space-y-1"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span>{format(new Date(apt.date), "PPP")}</span>
+                                <span
+                                  className={cn("px-2 py-0.5 rounded-full text-xs", {
+                                    "bg-green-100 text-green-800":
+                                      apt.status === AppointmentStatus.COMPLETED,
+                                    "bg-yellow-100 text-yellow-800":
+                                      apt.status === AppointmentStatus.PENDING,
+                                    "bg-blue-100 text-blue-800":
+                                      apt.status === AppointmentStatus.SCHEDULED,
+                                  })}
+                                >
+                                  {apt.status}
+                                </span>
+                              </div>
+                              <div className="text-muted-foreground">
+                                {format(new Date(apt.startTime), "h:mm a")} -{" "}
+                                {format(new Date(apt.endTime), "h:mm a")}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  )}
                 </div>
               </CardContent>
               <CardFooter>
@@ -358,7 +420,7 @@ export default function ContactPage() {
                     <Button
                       className="w-full bg-green-100 hover:bg-green-200 text-green-900 hover:text-black"
                       onClick={() => {
-                        setSelectedDietician(dietician as Dietician);
+                        setSelectedDietician(dietician as any);
                         setIsDialogOpen(true);
                       }}
                     >
