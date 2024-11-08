@@ -11,3 +11,7 @@ export const getAppointments = async (userId: string) => {
     },
   });
 };
+
+export const getAllAppointments = async () => {
+  return db.appointment.findMany({});
+};
