@@ -2,13 +2,14 @@ import type { ActionFunctionArgs } from "@remix-run/node";
 import { Link, useFetcher } from "@remix-run/react";
 import { Input } from "components/ui/input";
 import { Label } from "components/ui/label";
-import { HeartPulseIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, HeartPulseIcon } from "lucide-react";
 import * as React from "react";
 import { jsonWithError } from "remix-toast";
 import { UserRole } from "~/utils/enums";
 
 import { Button } from "components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "components/ui/tabs";
+import { z } from "zod";
 import { db } from "~/lib/prisma.server";
 import { createUserSession } from "~/lib/session.server";
 import { createHash } from "~/utils/encryption";
@@ -93,18 +94,134 @@ export default function Register() {
   const [zip, setZip] = React.useState("");
   const [dob, setDob] = React.useState("");
   const [phoneNo, setPhoneNo] = React.useState("");
-  const [role, setRole] = React.useState<UserRole>();
+  const [role, setRole] = React.useState<UserRole | undefined>(undefined);
   const [height, setHeight] = React.useState("");
   const [weight, setWeight] = React.useState("");
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
-  const nextStep = () => setStep((prevStep) => Math.min(prevStep + 1, 3));
+  // Update the stepErrors type definition to be more specific
+  const [stepErrors, setStepErrors] = React.useState<{
+    [key: number]: Record<string, string | undefined>;
+  }>({});
+
+  // Update the validateStep function to handle array paths in Zod errors
+  const validateStep = (currentStep: number) => {
+    const errors: Record<string, string> = {};
+
+    if (currentStep === 1) {
+      const stepOneSchema = z
+        .object({
+          role: z.nativeEnum(UserRole, { required_error: "Role is required" }),
+          firstName: z.string().min(1, "First name is required"),
+          lastName: z.string().min(1, "Last name is required"),
+          dob: z.string().min(1, "Date of birth is required"),
+          height: z.string().optional(),
+          weight: z.string().optional(),
+        })
+        .refine(
+          (data) => {
+            if (role === UserRole.USER) {
+              return !!data.height && !!data.weight;
+            }
+            return true;
+          },
+          {
+            message: "Height and weight are required for users",
+            path: ["height"],
+          },
+        );
+
+      const result = stepOneSchema.safeParse({
+        role,
+        firstName,
+        lastName,
+        dob,
+        height: role === UserRole.USER ? height : undefined,
+        weight: role === UserRole.USER ? weight : undefined,
+      });
+
+      if (!result.success) {
+        result.error.issues.forEach((issue) => {
+          // Handle both string and array paths
+          const path = Array.isArray(issue.path) ? issue.path[0] : issue.path;
+          errors[path.toString()] = issue.message;
+        });
+      }
+    }
+
+    if (currentStep === 2) {
+      const stepTwoSchema = z.object({
+        street: z.string().min(1, "Street is required"),
+        city: z.string().min(1, "City is required"),
+        state: z.string().min(1, "State is required"),
+        zip: z.string().min(1, "ZIP code is required"),
+        phoneNo: z.string().length(10, "Phone number must be 10 digits"),
+      });
+
+      const result = stepTwoSchema.safeParse({
+        street,
+        city,
+        state,
+        zip,
+        phoneNo,
+      });
+
+      if (!result.success) {
+        result.error.issues.forEach((issue) => {
+          errors[issue.path[0]] = issue.message;
+        });
+      }
+    }
+
+    if (currentStep === 3) {
+      const stepThreeSchema = z
+        .object({
+          email: z.string().email("Invalid email address"),
+          password: z.string().min(8, "Password must be at least 8 characters long"),
+          confirmPassword: z.string(),
+        })
+        .refine((data) => data.password === data.confirmPassword, {
+          message: "Passwords don't match",
+          path: ["confirmPassword"],
+        });
+
+      const result = stepThreeSchema.safeParse({
+        email,
+        password,
+        confirmPassword,
+      });
+
+      if (!result.success) {
+        result.error.issues.forEach((issue) => {
+          errors[issue.path[0]] = issue.message;
+        });
+      }
+    }
+
+    setStepErrors((prev) => ({ ...prev, [currentStep]: errors }));
+    return Object.keys(errors).length === 0;
+  };
+
+  // Update nextStep to include validation
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep((prevStep) => Math.min(prevStep + 1, 3));
+    }
+  };
+
+  // Add the prevStep function definition near the other state management functions
   const prevStep = () => setStep((prevStep) => Math.max(prevStep - 1, 1));
 
+  // Update handleSubmit to validate final step before submission
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!validateStep(3)) {
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
 
     // Add all form fields to formData
@@ -124,6 +241,18 @@ export default function Register() {
     formData.set("weight", weight);
 
     fetcher.submit(formData, { method: "post" });
+  };
+
+  // Update the getStepError function to handle undefined values
+  const getStepError = (field: string) => {
+    const stepError = stepErrors[step]?.[field];
+    const fetcherError = fetcher?.data?.fieldErrors?.[field as keyof ActionData["fieldErrors"]];
+
+    if (!stepError && !fetcherError) {
+      return null;
+    }
+
+    return <p className="mt-1 text-xs text-red-600">{stepError || fetcherError}</p>;
   };
 
   return (
@@ -153,9 +282,7 @@ export default function Register() {
                 </TabsList>
               </Tabs>
               <input type="hidden" name="role" value={role} />
-              {fetcher?.data?.fieldErrors?.role && (
-                <p className="text-xs text-red-600">{fetcher.data.fieldErrors.role}</p>
-              )}
+              {getStepError("role")}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -168,9 +295,7 @@ export default function Register() {
                   onChange={(e) => setFirstName(e.target.value)}
                   required
                 />
-                {fetcher?.data?.fieldErrors?.firstName && (
-                  <p className="text-xs text-red-600">{fetcher.data.fieldErrors.firstName}</p>
-                )}
+                {getStepError("firstName")}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
@@ -181,9 +306,7 @@ export default function Register() {
                   onChange={(e) => setLastName(e.target.value)}
                   required
                 />
-                {fetcher?.data?.fieldErrors?.lastName && (
-                  <p className="text-xs text-red-600">{fetcher.data.fieldErrors.lastName}</p>
-                )}
+                {getStepError("lastName")}
               </div>
             </div>
 
@@ -195,11 +318,12 @@ export default function Register() {
                 type="date"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
+                max={
+                  role === UserRole.DOCTOR ? "2000-12-31" : new Date().toISOString().split("T")[0]
+                }
                 required
               />
-              {fetcher?.data?.fieldErrors?.dob && (
-                <p className="text-xs text-red-600">{fetcher.data.fieldErrors.dob}</p>
-              )}
+              {getStepError("dob")}
             </div>
 
             {role === UserRole.USER && (
@@ -217,9 +341,7 @@ export default function Register() {
                     required
                     className="mt-1 block w-full"
                   />
-                  {fetcher?.data?.fieldErrors?.height && (
-                    <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.height}</p>
-                  )}
+                  {getStepError("height")}
                 </div>
                 <div>
                   <Label htmlFor="weight" className="block text-sm font-medium text-gray-700">
@@ -234,9 +356,7 @@ export default function Register() {
                     required
                     className="mt-1 block w-full"
                   />
-                  {fetcher?.data?.fieldErrors?.weight && (
-                    <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.weight}</p>
-                  )}
+                  {getStepError("weight")}
                 </div>
               </div>
             )}
@@ -258,9 +378,7 @@ export default function Register() {
                 required
                 className="mt-1 block w-full"
               />
-              {fetcher?.data?.fieldErrors?.street && (
-                <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.street}</p>
-              )}
+              {getStepError("street")}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -275,9 +393,7 @@ export default function Register() {
                   required
                   className="mt-1 block w-full"
                 />
-                {fetcher?.data?.fieldErrors?.city && (
-                  <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.city}</p>
-                )}
+                {getStepError("city")}
               </div>
               <div>
                 <Label htmlFor="state" className="block text-sm font-medium text-gray-700">
@@ -291,9 +407,7 @@ export default function Register() {
                   required
                   className="mt-1 block w-full"
                 />
-                {fetcher?.data?.fieldErrors?.state && (
-                  <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.state}</p>
-                )}
+                {getStepError("state")}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -310,9 +424,7 @@ export default function Register() {
                   maxLength={10}
                   className="mt-1 block w-full"
                 />
-                {fetcher?.data?.fieldErrors?.zip && (
-                  <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.zip}</p>
-                )}
+                {getStepError("zip")}
               </div>
               <div>
                 <Label htmlFor="phoneNo" className="block text-sm font-medium text-gray-700">
@@ -326,9 +438,7 @@ export default function Register() {
                   required
                   className="mt-1 block w-full"
                 />
-                {fetcher?.data?.fieldErrors?.phoneNo && (
-                  <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.phoneNo}</p>
-                )}
+                {getStepError("phoneNo")}
               </div>
             </div>
           </div>
@@ -350,9 +460,7 @@ export default function Register() {
                 required
                 className="mt-1 block w-full"
               />
-              {fetcher?.data?.fieldErrors?.email && (
-                <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.email}</p>
-              )}
+              {getStepError("email")}
             </div>
             <div>
               <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -380,9 +488,7 @@ export default function Register() {
                   )}
                 </button>
               </div>
-              {fetcher?.data?.fieldErrors?.password && (
-                <p className="mt-1 text-xs text-red-600">{fetcher.data.fieldErrors.password}</p>
-              )}
+              {getStepError("password")}
             </div>
             <div>
               <Label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
@@ -410,11 +516,7 @@ export default function Register() {
                   )}
                 </button>
               </div>
-              {fetcher?.data?.fieldErrors?.confirmPassword && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fetcher.data.fieldErrors.confirmPassword}
-                </p>
-              )}
+              {getStepError("confirmPassword")}
             </div>
           </div>
         )}

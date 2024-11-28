@@ -20,7 +20,7 @@
   "dependencies": {
     "@biomejs/biome": "^1.9.4",
     "@epic-web/remember": "^1.1.0",
-    "@prisma/client": "^5.21.1",
+    "@prisma/client": "^6.0.0",
     "@prisma/generator-helper": "^5.21.1",
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -54,7 +54,7 @@
     "loadash": "^1.0.0",
     "lucide-react": "^0.453.0",
     "morgan": "^1.10.0",
-    "prisma": "^5.21.1",
+    "prisma": "^6.0.0",
     "react": "18.3.0-canary-2f8f77602-20240229",
     "react-dom": "18.3.0-canary-2f8f77602-20240229",
     "remix-toast": "^1.2.2",

@@ -3,10 +3,22 @@ import { Button } from "components/ui/button";
 import { Input } from "components/ui/input";
 import { Label } from "components/ui/label";
 import PageHeading from "~/components/page-heading";
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { requireUserId } from "~/lib/session.server";
+import { getUserById } from "~/lib/auth.server";
+import { useLoaderData } from "@remix-run/react";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const userId = await requireUserId(request);
+  const user = await getUserById(userId);
+  return json({ user });
+};
 
 export default function BMI() {
-  const [height, setHeight] = useState("170");
-  const [weight, setWeight] = useState("70");
+  const { user } = useLoaderData<typeof loader>();
+  const [height, setHeight] = useState(user?.height?.toString() || "");
+  const [weight, setWeight] = useState(user?.weight?.toString() || "");
   const [bmi, setBmi] = useState<number | null>(null);
 
   const calculateBMI = () => {

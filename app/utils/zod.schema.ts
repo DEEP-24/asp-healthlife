@@ -25,7 +25,7 @@ export const RegisterSchema = z
     state: z.string().min(1, "State is required"),
     zip: z.string().min(1, "ZIP code is required"),
     dob: z.string().min(1, "Date of birth is required"),
-    phoneNo: z.string().min(1, "Phone number is required"),
+    phoneNo: z.string().length(10, "Phone number must be 10 digits"),
     role: z.nativeEnum(UserRole),
     height: z.string().optional(),
     weight: z.string().optional(),

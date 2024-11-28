@@ -12,6 +12,8 @@ export async function getUserById(id: User["id"]) {
       firstName: true,
       lastName: true,
       role: true,
+      height: true,
+      weight: true,
     },
     where: { id },
   });

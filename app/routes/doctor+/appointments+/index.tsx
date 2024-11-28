@@ -31,40 +31,52 @@ export default function Appointments() {
   return (
     <>
       <PageHeading title="Appointments" />
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8 px-6">
-        {appointments.map((appointment) => (
-          <Card key={appointment.id} className="overflow-hidden transition-shadow hover:shadow-lg">
-            <CardHeader className="bg-primary/10 pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <User className="h-5 w-5" />
-                {`${appointment.patient.firstName} ${appointment.patient.lastName}`}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Date:</span>
-                  {new Date(appointment.date).toLocaleDateString()}
-                </p>
-                <p className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Time:</span>
-                  {formatTime(appointment.startTime)} to {formatTime(appointment.endTime)}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Link to={`/doctor/appointments/${appointment.id}`}>
-                  <Button className="w-full bg-green-100 hover:bg-green-200 text-green-800">
-                    <EyeIcon className="h-4 w-4" />
-                    View
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {appointments.length === 0 ? (
+        <div className="flex flex-col items-center justify-center mt-8 px-6">
+          <p className="text-lg text-gray-600">No appointments found</p>
+          <p className="text-sm text-gray-500 mt-2">
+            When patients book appointments, they will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8 px-6">
+          {appointments.map((appointment) => (
+            <Card
+              key={appointment.id}
+              className="overflow-hidden transition-shadow hover:shadow-lg"
+            >
+              <CardHeader className="bg-primary/10 pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <User className="h-5 w-5" />
+                  {`${appointment.patient.firstName} ${appointment.patient.lastName}`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-2">
+                  <p className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Date:</span>
+                    {new Date(appointment.date).toLocaleDateString()}
+                  </p>
+                  <p className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Time:</span>
+                    {formatTime(appointment.startTime)} to {formatTime(appointment.endTime)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <Link to={`/doctor/appointments/${appointment.id}`}>
+                    <Button className="w-full bg-green-100 hover:bg-green-200 text-green-800">
+                      <EyeIcon className="h-4 w-4" />
+                      View
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </>
   );
 }

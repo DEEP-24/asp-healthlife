@@ -60,7 +60,7 @@ export default function AppointmentsPage() {
             <Card key={appointment.id}>
               <CardHeader>
                 <CardTitle>
-                  Appointment with Dr. {appointment.doctor.firstName} {appointment.doctor.lastName}
+                  Appointment with {appointment.doctor.firstName} {appointment.doctor.lastName}
                 </CardTitle>
               </CardHeader>
               <CardContent>
