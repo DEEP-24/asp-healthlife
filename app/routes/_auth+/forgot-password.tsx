@@ -4,6 +4,7 @@ import { Button } from "components/ui/button";
 import { Label } from "components/ui/label";
 import { useState } from "react";
 import { z } from "zod";
+import { sendEmail } from "~/lib/mail.server";
 import { db } from "~/lib/prisma.server";
 import { generatePasswordResetToken } from "~/utils/misc.server";
 import { type inferErrors, validateAction } from "~/utils/validation";
@@ -105,7 +106,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     });
 
-    console.log("Password reset token:", token);
+    await sendEmail({
+      to: email,
+      subject: "Reset Password",
+      text: `Your password reset code is ${token}. It expires in 15 minutes.`,
+    });
+
     return json<ActionData>({
       success: true,
       email,
