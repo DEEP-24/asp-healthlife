@@ -75,8 +75,16 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   await db.user.update({
     where: { id: doctorId },
     data: {
-      ...fields,
+      firstName: fields.firstName,
+      lastName: fields.lastName,
+      email: fields.email,
+      phoneNo: fields.phoneNo,
       dob: new Date(fields.dob),
+      speciality: fields.speciality,
+      street: fields.street,
+      city: fields.city,
+      state: fields.state,
+      zip: fields.zip,
     },
   });
 
@@ -147,8 +155,8 @@ export default function EditDoctor() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="specialty">Specialty</Label>
-                <Select name="specialty" defaultValue={doctor.specialty!}>
+                <Label htmlFor="speciality">Specialty</Label>
+                <Select name="speciality" defaultValue={doctor.speciality!}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select specialty" />
                   </SelectTrigger>
@@ -160,8 +168,8 @@ export default function EditDoctor() {
                     <SelectItem value="psychiatry">Psychiatry</SelectItem>
                   </SelectContent>
                 </Select>
-                {fetcher.data?.fieldErrors?.specialty && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.specialty}</p>
+                {fetcher.data?.fieldErrors?.speciality && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.speciality}</p>
                 )}
               </div>
               <div>
@@ -188,6 +196,7 @@ export default function EditDoctor() {
                   type="date"
                   defaultValue={new Date(doctor.dob).toISOString().split("T")[0]}
                   aria-invalid={!!fetcher.data?.fieldErrors?.dob}
+                  max={new Date("2000-12-31").toISOString().split("T")[0]}
                 />
                 {fetcher.data?.fieldErrors?.dob && (
                   <p className="text-sm text-destructive">{fetcher.data.fieldErrors.dob}</p>

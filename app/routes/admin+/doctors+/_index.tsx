@@ -57,7 +57,7 @@ export default function AdminDoctors() {
                     </TableCell>
                     <TableCell>{doctor.email}</TableCell>
                     <TableCell>{doctor.phoneNo}</TableCell>
-                    <TableCell>{doctor.specialty}</TableCell>
+                    <TableCell>{doctor.speciality}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Link to={`/admin/doctors/${doctor.id}/edit`}>

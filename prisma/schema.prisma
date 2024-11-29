@@ -19,13 +19,13 @@ model User {
   lastName  String @map("last_name")
   password  String
 
-  street    String
-  city      String
-  state     String
-  zip       String   @db.VarChar(10)
-  dob       DateTime
-  phoneNo   String   @map("phone_number")
-  specialty String?
+  street     String
+  city       String
+  state      String
+  zip        String   @db.VarChar(10)
+  dob        DateTime
+  phoneNo    String   @map("phone_number")
+  speciality String?
 
   height String?
   weight String?

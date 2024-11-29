@@ -4,13 +4,6 @@ import { Button } from "components/ui/button";
 import { Card, CardContent } from "components/ui/card";
 import { Input } from "components/ui/input";
 import { Label } from "components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "components/ui/select";
 import { jsonWithError, redirectWithSuccess } from "remix-toast";
 import PageHeading from "~/components/page-heading";
 import { db } from "~/lib/prisma.server";
@@ -19,26 +12,26 @@ import { createHash } from "~/utils/encryption";
 import { UserRole } from "~/utils/enums";
 import { useFetcherCallback } from "~/utils/hooks/use-fetcher-callback";
 import { type inferErrors, validateAction } from "~/utils/validation";
-import { DoctorSchema } from "~/utils/zod.schema";
+import { CreateUserSchema } from "~/utils/zod.schema";
 
 type ActionData = {
   success: boolean;
-  fieldErrors?: inferErrors<typeof DoctorSchema>;
+  fieldErrors?: inferErrors<typeof CreateUserSchema>;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   await requireUserId(request);
-  const { fieldErrors, fields } = await validateAction(request, DoctorSchema);
+  const { fieldErrors, fields } = await validateAction(request, CreateUserSchema);
 
   if (fieldErrors) {
     return jsonWithError({ fieldErrors, success: false }, "Please correct the errors");
   }
 
-  const doctorWithEmail = await db.user.findUnique({
+  const userWithEmail = await db.user.findUnique({
     where: { email: fields.email },
   });
 
-  if (doctorWithEmail) {
+  if (userWithEmail) {
     return jsonWithError(
       { fieldErrors: { email: "Email already exists" }, success: false },
       "Email already exists",
@@ -50,22 +43,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       firstName: fields.firstName,
       lastName: fields.lastName,
       email: fields.email,
-      phoneNo: fields.phoneNo,
       street: fields.street,
       city: fields.city,
       state: fields.state,
       zip: fields.zip,
-      speciality: fields.speciality,
+      phoneNo: fields.phoneNo,
+      height: fields.height,
+      weight: fields.weight,
       dob: new Date(fields.dob),
       password: await createHash(fields.password),
-      role: UserRole.DOCTOR,
+      role: UserRole.USER,
     },
   });
 
-  return redirectWithSuccess("/admin/doctors", "Doctor added successfully");
+  return redirectWithSuccess("/admin/users", "User added successfully");
 };
 
-export default function NewDoctor() {
+export default function NewUser() {
   const fetcher = useFetcherCallback<ActionData>();
 
   return (
@@ -73,11 +67,11 @@ export default function NewDoctor() {
       <CardContent className="p-6">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
           <div className="max-sm:w-full sm:flex-1">
-            <PageHeading title="New Doctor" />
+            <PageHeading title="New User" />
           </div>
         </div>
 
-        <fetcher.Form method="post" id="new-doctor-form">
+        <fetcher.Form method="post" id="new-user-form">
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -121,6 +115,22 @@ export default function NewDoctor() {
                   <p className="text-sm text-destructive">{fetcher.data.fieldErrors.email}</p>
                 )}
               </div>
+              <div>
+                <Label htmlFor="phoneNo">Phone Number</Label>
+                <Input
+                  id="phoneNo"
+                  name="phoneNo"
+                  type="tel"
+                  placeholder="Enter phone number"
+                  aria-invalid={!!fetcher.data?.fieldErrors?.phoneNo}
+                />
+                {fetcher.data?.fieldErrors?.phoneNo && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.phoneNo}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="password">Password</Label>
@@ -153,40 +163,7 @@ export default function NewDoctor() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="speciality">Specialty</Label>
-                <Select name="speciality">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select specialty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cardiology">Cardiology</SelectItem>
-                    <SelectItem value="dermatology">Dermatology</SelectItem>
-                    <SelectItem value="neurology">Neurology</SelectItem>
-                    <SelectItem value="pediatrics">Pediatrics</SelectItem>
-                    <SelectItem value="psychiatry">Psychiatry</SelectItem>
-                  </SelectContent>
-                </Select>
-                {fetcher.data?.fieldErrors?.speciality && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.speciality}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="phoneNo">Phone Number</Label>
-                <Input
-                  id="phoneNo"
-                  name="phoneNo"
-                  placeholder="Enter phone number"
-                  aria-invalid={!!fetcher.data?.fieldErrors?.phoneNo}
-                />
-                {fetcher.data?.fieldErrors?.phoneNo && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.phoneNo}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <Label htmlFor="dob">Date of Birth</Label>
                 <Input
@@ -194,10 +171,36 @@ export default function NewDoctor() {
                   name="dob"
                   type="date"
                   aria-invalid={!!fetcher.data?.fieldErrors?.dob}
-                  max={new Date("2000-12-31").toISOString().split("T")[0]}
+                  max={new Date().toISOString().split("T")[0]}
                 />
                 {fetcher.data?.fieldErrors?.dob && (
                   <p className="text-sm text-destructive">{fetcher.data.fieldErrors.dob}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="height">Height (cm)</Label>
+                <Input
+                  id="height"
+                  name="height"
+                  type="number"
+                  placeholder="Enter height"
+                  aria-invalid={!!fetcher.data?.fieldErrors?.height}
+                />
+                {fetcher.data?.fieldErrors?.height && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.height}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="weight">Weight (kg)</Label>
+                <Input
+                  id="weight"
+                  name="weight"
+                  type="number"
+                  placeholder="Enter weight"
+                  aria-invalid={!!fetcher.data?.fieldErrors?.weight}
+                />
+                {fetcher.data?.fieldErrors?.weight && (
+                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.weight}</p>
                 )}
               </div>
             </div>
@@ -252,11 +255,11 @@ export default function NewDoctor() {
 
             <div className="flex gap-4 items-center justify-end">
               <Button variant="outline" asChild>
-                <Link to="/admin/doctors">Cancel</Link>
+                <Link to="/admin/users">Cancel</Link>
               </Button>
               <Button
                 type="submit"
-                form="new-doctor-form"
+                form="new-user-form"
                 className="bg-green-200 text-green-900 hover:bg-green-300"
               >
                 {fetcher.isPending ? "Adding..." : "Add"}

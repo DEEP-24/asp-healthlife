@@ -10,9 +10,9 @@ export const action = async ({ params }: { params: { id: string } }) => {
       where: { id },
     });
 
-    return redirectWithSuccess("/admin/doctors", "Doctor deleted successfully");
+    return redirectWithSuccess("/admin/users", "User deleted successfully");
   } catch (error) {
-    console.error("Failed to delete doctor:", error);
-    return json({ error: "Failed to delete doctor" }, { status: 500 });
+    console.error("Failed to delete user:", error);
+    return json({ error: "Failed to delete user" }, { status: 500 });
   }
 };

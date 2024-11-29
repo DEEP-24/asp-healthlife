@@ -32,6 +32,11 @@ const sidebarLinks: SidebarLinkType[] = [
     icon: Users2Icon,
     label: "Doctors",
   },
+  {
+    to: "/admin/users",
+    icon: Users2Icon,
+    label: "Users",
+  },
 ];
 
 function SidebarLink({

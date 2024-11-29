@@ -81,27 +81,6 @@ export const EditHospitalSchema = CreateHospitalSchema.omit({
   hospitalId: z.string().trim().min(1, "ID is required"),
 });
 
-export const CreateUserSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required"),
-  lastName: z.string().trim().min(1, "Last name is required"),
-  street: z.string().trim().min(1, "Street is required"),
-  city: z.string().trim().min(1, "City is required"),
-  state: z.string().trim().min(1, "State is required"),
-  zip: z.string().trim().min(1, "Zip is required"),
-  dob: z.string().trim().min(1, "Date of birth is required"),
-  phoneNo: z.string().trim().min(1, "Phone number is required"),
-  email: z.string().trim().email("Invalid email"),
-  password: z.string().trim().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().trim().min(8, "Password must be at least 8 characters"),
-});
-
-export const EditUserSchema = CreateUserSchema.omit({
-  password: true,
-  confirmPassword: true,
-}).extend({
-  donorId: z.string().trim().min(1, "ID is required"),
-});
-
 export type SelectIngredient = Omit<Ingredient, "recipeId">;
 export type Step = {
   id: string;
@@ -170,8 +149,8 @@ export const DoctorSchema = z
       .refine((date) => !Number.isNaN(Date.parse(date)), {
         message: "Invalid date format",
       }),
-    phoneNo: z.string().min(10, "Phone number is required"),
-    specialty: z.string().min(1, "Specialty is required"),
+    phoneNo: z.string().length(10, "Phone number must be 10 digits"),
+    speciality: z.string().min(1, "Specialty is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -192,6 +171,51 @@ export const EditDoctorSchema = z.object({
     .refine((date) => !Number.isNaN(Date.parse(date)), {
       message: "Invalid date format",
     }),
-  phoneNo: z.string().min(10, "Phone number is required"),
-  specialty: z.string().min(1, "Specialty is required"),
+  phoneNo: z.string().length(10, "Phone number must be 10 digits"),
+  speciality: z.string().min(1, "Specialty is required"),
+});
+
+export const CreateUserSchema = z
+  .object({
+    email: z.string().email(),
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string().min(1, "Confirm password is required"),
+    street: z.string().min(1, "Street is required"),
+    city: z.string().min(1, "City is required"),
+    state: z.string().min(1, "State is required"),
+    zip: z.string().min(5, "ZIP code is required"),
+    dob: z
+      .string()
+      .min(1, "Date of birth is required")
+      .refine((date) => !Number.isNaN(Date.parse(date)), {
+        message: "Invalid date format",
+      }),
+    phoneNo: z.string().length(10, "Phone number must be 10 digits"),
+    height: z.string().min(1, "Height is required"),
+    weight: z.string().min(1, "Weight is required"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+export const EditUserSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  street: z.string().min(1, "Street is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zip: z.string().min(5, "ZIP code is required"),
+  dob: z
+    .string()
+    .min(1, "Date of birth is required")
+    .refine((date) => !Number.isNaN(Date.parse(date)), {
+      message: "Invalid date format",
+    }),
+  phoneNo: z.string().length(10, "Phone number must be 10 digits"),
+  height: z.string().min(1, "Height is required"),
+  weight: z.string().min(1, "Weight is required"),
 });
