@@ -8,7 +8,6 @@ const db = new PrismaClient();
 async function cleanup() {
   console.time("🧹 Cleaned up the database...");
 
-  // Delete child tables first
   await db.questionWithAnswer.deleteMany();
   await db.appointmentQuestionnaire.deleteMany();
   await db.healthMetric.deleteMany();
@@ -20,7 +19,8 @@ async function cleanup() {
   await db.ingredient.deleteMany();
   await db.step.deleteMany();
   await db.recipes.deleteMany();
-  // Delete parent table last
+  await db.allergySolution.deleteMany();
+  await db.allergy.deleteMany();
   await db.user.deleteMany();
 
   console.timeEnd("🧹 Cleaned up the database...");
@@ -348,6 +348,55 @@ async function createQuestions() {
   console.timeEnd("❓ Created questions...");
 }
 
+async function createAllergies() {
+  console.time("🤧 Created allergies...");
+
+  const allergies = [
+    {
+      name: "Peanut Allergy",
+      solutions: [
+        "Avoid all peanut products and check food labels carefully",
+        "Carry an epinephrine auto-injector",
+        "Inform restaurants about your allergy",
+        "Consider wearing a medical alert bracelet",
+      ],
+    },
+    {
+      name: "Lactose Intolerance",
+      solutions: [
+        "Use lactose-free dairy products",
+        "Take lactase enzyme supplements before consuming dairy",
+        "Try non-dairy alternatives like almond or soy milk",
+        "Check food labels for hidden dairy ingredients",
+      ],
+    },
+    {
+      name: "Gluten Sensitivity",
+      solutions: [
+        "Follow a strict gluten-free diet",
+        "Read food labels for hidden sources of gluten",
+        "Use gluten-free alternatives for bread and pasta",
+        "Be cautious when dining out and ask about ingredients",
+      ],
+    },
+  ];
+
+  for (const allergy of allergies) {
+    await db.allergy.create({
+      data: {
+        name: allergy.name,
+        solutions: {
+          create: allergy.solutions.map((solution) => ({
+            solution,
+          })),
+        },
+      },
+    });
+  }
+
+  console.timeEnd("🤧 Created allergies...");
+}
+
 async function seed() {
   console.log("🌱 Seeding...\n");
 
@@ -359,6 +408,7 @@ async function seed() {
   await createDoctorAvailability();
   await createHealthMetrics();
   await createQuestions();
+  await createAllergies();
 
   console.timeEnd("🌱 Database has been seeded");
 }

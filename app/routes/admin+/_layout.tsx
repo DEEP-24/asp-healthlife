@@ -7,6 +7,7 @@ import {
   FileQuestionIcon,
   HeartPulseIcon,
   LogOutIcon,
+  PillIcon,
   Users2Icon,
 } from "lucide-react";
 
@@ -47,6 +48,11 @@ const sidebarLinks: SidebarLinkType[] = [
     to: "/admin/questionnaire",
     icon: FileQuestionIcon,
     label: "Questionnaire",
+  },
+  {
+    to: "/admin/allergies",
+    icon: PillIcon,
+    label: "Allergies",
   },
 ];
 

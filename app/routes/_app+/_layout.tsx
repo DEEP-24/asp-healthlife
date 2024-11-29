@@ -9,6 +9,7 @@ import {
   HeartPulseIcon,
   LogOutIcon,
   MessageCircleIcon,
+  PillIcon,
 } from "lucide-react";
 
 import { requireUserId, validateUserRole } from "~/lib/session.server";
@@ -48,6 +49,11 @@ const sidebarLinks: SidebarLinkType[] = [
     to: "/appointments",
     icon: CalendarIcon,
     label: "Appointments",
+  },
+  {
+    to: "/allergies",
+    icon: PillIcon,
+    label: "Allergies",
   },
 ];
 

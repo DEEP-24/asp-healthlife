@@ -218,6 +218,31 @@ model QuestionWithAnswer {
   @@map("question_with_answers")
 }
 
+model Allergy {
+  id   String @id @default(uuid())
+  name String @unique
+
+  solutions AllergySolution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("allergies")
+}
+
+model AllergySolution {
+  id       String @id @default(uuid())
+  solution String
+
+  allergy   Allergy @relation(fields: [allergyId], references: [id], onDelete: Cascade)
+  allergyId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("allergy_solutions")
+}
+
 enum UserRole {
   ADMIN
   USER
