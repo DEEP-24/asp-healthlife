@@ -4,13 +4,13 @@ import { Button } from "components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
 import { Calendar, Clock, EyeIcon, User } from "lucide-react";
 import PageHeading from "~/components/page-heading";
-import { getAppointments } from "~/lib/appointment.server";
+import { getAppointmentsByDoctorId } from "~/lib/appointment.server";
 import { requireUserId } from "~/lib/session.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const userId = await requireUserId(request);
 
-  const appointments = await getAppointments(userId);
+  const appointments = await getAppointmentsByDoctorId(userId);
 
   return json({ appointments });
 };

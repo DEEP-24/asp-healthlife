@@ -2,9 +2,6 @@ import { z } from "zod";
 import { UserRole } from "~/utils/enums";
 import type { Ingredient } from "@prisma/client";
 
-// const EMAIL_REGEX =
-//   /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
-
 export const LoginSchema = z.object({
   email: z.string().trim().min(3, "Name is required"),
   password: z.string().min(1, "Password is required"),

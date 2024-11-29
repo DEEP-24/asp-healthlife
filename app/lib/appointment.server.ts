@@ -1,6 +1,6 @@
 import { db } from "~/lib/prisma.server";
 
-export const getAppointments = async (userId: string) => {
+export const getAppointmentsByDoctorId = async (userId: string) => {
   return db.appointment.findMany({
     where: {
       doctorId: userId,
@@ -8,6 +8,11 @@ export const getAppointments = async (userId: string) => {
     include: {
       patient: true,
       doctor: true,
+      questionnaire: {
+        include: {
+          questions: true,
+        },
+      },
     },
   });
 };

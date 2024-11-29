@@ -22,7 +22,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         select: {
           firstName: true,
           lastName: true,
-          specialty: true,
+          speciality: true,
           email: true,
           phoneNo: true,
         },
@@ -106,7 +106,7 @@ export default function AppointmentsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Specialty</span>
-                        <p>{appointment.doctor.specialty}</p>
+                        <p>{appointment.doctor.speciality}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Email</span>

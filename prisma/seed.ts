@@ -8,6 +8,9 @@ const db = new PrismaClient();
 async function cleanup() {
   console.time("🧹 Cleaned up the database...");
 
+  // Delete child tables first
+  await db.questionWithAnswer.deleteMany();
+  await db.appointmentQuestionnaire.deleteMany();
   await db.healthMetric.deleteMany();
   await db.meal.deleteMany();
   await db.mealPlan.deleteMany();
@@ -17,6 +20,7 @@ async function cleanup() {
   await db.ingredient.deleteMany();
   await db.step.deleteMany();
   await db.recipes.deleteMany();
+  // Delete parent table last
   await db.user.deleteMany();
 
   console.timeEnd("🧹 Cleaned up the database...");
@@ -311,6 +315,39 @@ async function createHealthMetrics() {
   console.timeEnd("📊 Created health metrics...");
 }
 
+const QUESTIONS_DATA = [
+  {
+    question: "Have you seen a dietician before?",
+  },
+  {
+    question: "Are you currently on any medications or supplements?",
+  },
+  {
+    question: "What is your activity level, and do you any physical limitations?",
+  },
+  {
+    question: "Are you currently following any specific diet plan or nutrition guidelines?",
+  },
+  {
+    question: "What are your main health goals?",
+  },
+];
+
+async function createQuestions() {
+  console.time("❓ Created questions...");
+
+  for (const q of QUESTIONS_DATA) {
+    await db.questionWithAnswer.create({
+      data: {
+        question: q.question,
+        answer: "",
+      },
+    });
+  }
+
+  console.timeEnd("❓ Created questions...");
+}
+
 async function seed() {
   console.log("🌱 Seeding...\n");
 
@@ -321,6 +358,7 @@ async function seed() {
   await createAppointment();
   await createDoctorAvailability();
   await createHealthMetrics();
+  await createQuestions();
 
   console.timeEnd("🌱 Database has been seeded");
 }

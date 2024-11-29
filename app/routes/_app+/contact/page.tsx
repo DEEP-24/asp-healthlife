@@ -13,6 +13,7 @@ import {
 } from "components/ui/dialog";
 import { Input } from "components/ui/input";
 import { Label } from "components/ui/label";
+import { Textarea } from "components/ui/textarea";
 import { addDays, format } from "date-fns";
 import { CalendarPlusIcon, Mail, MapPin, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -67,64 +68,70 @@ type Dietician = {
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const userId = await requireUserId(request);
 
-  const dieticians = await db.user.findMany({
-    where: {
-      role: UserRole.DOCTOR,
-    },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phoneNo: true,
-      street: true,
-      city: true,
-      state: true,
-      zip: true,
-      availability: {
-        select: {
-          id: true,
-          dayOfWeek: true,
-          startTime: true,
-          endTime: true,
-          isAvailable: true,
-        },
+  const [dieticians, appointments, questions] = await Promise.all([
+    db.user.findMany({
+      where: {
+        role: UserRole.DOCTOR,
       },
-      doctorAppointments: {
-        where: {
-          patientId: userId,
-          status: {
-            not: AppointmentStatus.CANCELLED,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNo: true,
+        street: true,
+        city: true,
+        state: true,
+        zip: true,
+        availability: {
+          select: {
+            id: true,
+            dayOfWeek: true,
+            startTime: true,
+            endTime: true,
+            isAvailable: true,
           },
         },
-        select: {
-          id: true,
-          date: true,
-          startTime: true,
-          endTime: true,
-          status: true,
+        doctorAppointments: {
+          where: {
+            patientId: userId,
+            status: {
+              not: AppointmentStatus.CANCELLED,
+            },
+          },
+          select: {
+            id: true,
+            date: true,
+            startTime: true,
+            endTime: true,
+            status: true,
+          },
         },
       },
-    },
-  });
-
-  const appointments = await db.appointment.findMany({
-    where: {
-      status: {
-        not: AppointmentStatus.CANCELLED,
+    }),
+    db.appointment.findMany({
+      where: {
+        status: {
+          not: AppointmentStatus.CANCELLED,
+        },
       },
-    },
-    select: {
-      id: true,
-      date: true,
-      startTime: true,
-      endTime: true,
-      doctorId: true,
-      status: true,
-    },
-  });
+      select: {
+        id: true,
+        date: true,
+        startTime: true,
+        endTime: true,
+        doctorId: true,
+        status: true,
+      },
+    }),
+    db.questionWithAnswer.findMany({
+      orderBy: {
+        createdAt: "asc",
+      },
+    }),
+  ]);
 
-  return json({ dieticians, appointments });
+  return json({ dieticians, appointments, questions });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -147,6 +154,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       doctorId,
       status: AppointmentStatus.PENDING,
       notes: "",
+      questionnaire: {
+        create: {
+          questions: {
+            create: Array.from(formData.entries())
+              .filter(([key]) => key.startsWith("question_"))
+              .map(([key, value]) => ({
+                question: key.replace("question_", ""),
+                answer: value as string,
+              })),
+          },
+        },
+      },
     },
   });
 
@@ -196,7 +215,7 @@ function formatAvailabilityTime(time: string | Date) {
 }
 
 export default function ContactPage() {
-  const { dieticians, appointments } = useLoaderData<typeof loader>();
+  const { dieticians, appointments, questions } = useLoaderData<typeof loader>();
   const [selectedDietician, setSelectedDietician] = useState<Dietician | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -250,7 +269,10 @@ export default function ContactPage() {
       const availStart = new Date(availability.startTime);
       const availEnd = new Date(availability.endTime);
       setValidationError(
-        `Selected time must be between ${format(availStart, "h:mm a")} and ${format(availEnd, "h:mm a")}`,
+        `Selected time must be between ${format(availStart, "h:mm a")} and ${format(
+          availEnd,
+          "h:mm a",
+        )}`,
       );
       return;
     }
@@ -427,117 +449,149 @@ export default function ContactPage() {
                       <CalendarPlusIcon className="mr-2 h-4 w-4" /> Book Appointment
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[800px]">
+                  <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col overflow-hidden">
                     <DialogHeader>
                       <DialogTitle>
                         Book Appointment with {selectedDietician?.firstName}{" "}
                         {selectedDietician?.lastName}
                       </DialogTitle>
                     </DialogHeader>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="h-full flex flex-col border-r pr-6">
-                        <fetcher.Form
-                          method="post"
-                          className="space-y-4 flex-1 flex flex-col"
-                          onChange={handleFormChange}
-                          onSubmit={handleSubmit}
-                        >
-                          <div className="flex-1 space-y-4">
-                            <input type="hidden" name="doctorId" value={selectedDietician?.id} />
-                            <div>
-                              <Label htmlFor="date">Date</Label>
-                              <Input
-                                type="date"
-                                id="date"
-                                name="date"
-                                min={format(new Date(), "yyyy-MM-dd")}
-                                max={format(addDays(new Date(), 30), "yyyy-MM-dd")}
-                                required
-                              />
+                    <fetcher.Form
+                      method="post"
+                      className="flex flex-col flex-1 overflow-hidden"
+                      onChange={handleFormChange}
+                      onSubmit={handleSubmit}
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="h-full flex flex-col border-r pr-6">
+                            <div className="flex-1 space-y-4">
+                              <input type="hidden" name="doctorId" value={selectedDietician?.id} />
+                              <div>
+                                <Label htmlFor="date">Date</Label>
+                                <Input
+                                  type="date"
+                                  id="date"
+                                  name="date"
+                                  min={format(new Date(), "yyyy-MM-dd")}
+                                  max={format(addDays(new Date(), 30), "yyyy-MM-dd")}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="startTime">Start Time</Label>
+                                <Input type="time" id="startTime" name="startTime" required />
+                              </div>
+                              <div>
+                                <Label htmlFor="endTime">End Time</Label>
+                                <Input type="time" id="endTime" name="endTime" required />
+                              </div>
                             </div>
-                            <div>
-                              <Label htmlFor="startTime">Start Time</Label>
-                              <Input type="time" id="startTime" name="startTime" required />
-                            </div>
-                            <div>
-                              <Label htmlFor="endTime">End Time</Label>
-                              <Input type="time" id="endTime" name="endTime" required />
-                            </div>
-
-                            {(validationError || fetcher.data?.fieldErrors) && (
-                              <Alert variant="destructive" className="mt-2">
-                                <AlertDescription>
-                                  {validationError || fetcher.data?.fieldErrors?.startTime}
-                                </AlertDescription>
-                              </Alert>
-                            )}
                           </div>
 
+                          <div className="pl-6">
+                            <h3 className="font-medium mb-3 text-base">Doctor's Availability</h3>
+                            <div className="space-y-1.5">
+                              {selectedDietician?.availability &&
+                              selectedDietician.availability.length > 0 ? (
+                                [0, 1, 2, 3, 4, 5, 6].map((day) => {
+                                  const dayAvailability = selectedDietician.availability.find(
+                                    (a) => a.dayOfWeek === day && a.isAvailable,
+                                  );
+                                  return (
+                                    <div
+                                      key={day}
+                                      className={cn(
+                                        "p-2 rounded-lg transition-colors flex items-center justify-between",
+                                        dayAvailability
+                                          ? "bg-green-50 border border-green-100"
+                                          : "bg-gray-50 border border-gray-100",
+                                      )}
+                                    >
+                                      <div className="text-sm font-medium">
+                                        {format(new Date(2024, 0, day + 1), "EEEE")}
+                                      </div>
+                                      <div
+                                        className={cn(
+                                          "flex items-center gap-1.5",
+                                          dayAvailability ? "text-green-700" : "text-gray-500",
+                                        )}
+                                      >
+                                        <div
+                                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                                          style={{
+                                            backgroundColor: dayAvailability
+                                              ? "#22c55e"
+                                              : "#9ca3af",
+                                          }}
+                                        />
+                                        {dayAvailability ? (
+                                          <span className="text-xs">
+                                            {formatAvailabilityTime(dayAvailability.startTime)} -{" "}
+                                            {formatAvailabilityTime(dayAvailability.endTime)}
+                                          </span>
+                                        ) : (
+                                          <span className="text-xs">Not available</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="text-xs text-muted-foreground p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                  Doctor hasn't mentioned anything about their availability.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-h-0 border-t mt-6">
+                        <div className="h-full flex flex-col overflow-hidden">
+                          <h3 className="font-medium py-4 flex-shrink-0 bg-white">
+                            Pre-Appointment Questionnaire
+                          </h3>
+                          <div className="flex-1 overflow-y-auto px-1">
+                            <div className="space-y-4 pb-4">
+                              {questions.map((question) => (
+                                <div key={question.id} className="space-y-2">
+                                  <Label htmlFor={`question_${question.question}`}>
+                                    {question.question}
+                                  </Label>
+                                  <Textarea
+                                    id={`question_${question.question}`}
+                                    name={`question_${question.question}`}
+                                    placeholder="Your answer..."
+                                    required
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex-shrink-0 border-t bg-white pt-4">
+                        {(validationError || fetcher.data?.fieldErrors) && (
+                          <Alert variant="destructive">
+                            <AlertDescription>
+                              {validationError || fetcher.data?.fieldErrors?.startTime}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        <div className="flex justify-end mt-4">
                           <Button
                             type="submit"
                             disabled={isSubmitting || !!validationError}
-                            className="bg-green-100 hover:bg-green-200 text-green-900 hover:text-black w-full mt-auto"
+                            className="bg-green-100 hover:bg-green-200 text-green-900 hover:text-black"
                           >
                             {isSubmitting ? "Booking..." : "Book Appointment"}
                           </Button>
-                        </fetcher.Form>
-                      </div>
-
-                      <div className="pl-6">
-                        <h3 className="font-medium mb-3 text-base">Doctor's Availability</h3>
-                        <div className="space-y-1.5">
-                          {selectedDietician?.availability &&
-                          selectedDietician.availability.length > 0 ? (
-                            [0, 1, 2, 3, 4, 5, 6].map((day) => {
-                              const dayAvailability = selectedDietician.availability.find(
-                                (a) => a.dayOfWeek === day && a.isAvailable,
-                              );
-
-                              return (
-                                <div
-                                  key={day}
-                                  className={cn(
-                                    "p-2 rounded-lg transition-colors flex items-center justify-between",
-                                    dayAvailability
-                                      ? "bg-green-50 border border-green-100"
-                                      : "bg-gray-50 border border-gray-100",
-                                  )}
-                                >
-                                  <div className="text-sm font-medium">
-                                    {format(new Date(2024, 0, day + 1), "EEEE")}
-                                  </div>
-                                  <div
-                                    className={cn(
-                                      "flex items-center gap-1.5",
-                                      dayAvailability ? "text-green-700" : "text-gray-500",
-                                    )}
-                                  >
-                                    <div
-                                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                                      style={{
-                                        backgroundColor: dayAvailability ? "#22c55e" : "#9ca3af",
-                                      }}
-                                    />
-                                    {dayAvailability ? (
-                                      <span className="text-xs">
-                                        {formatAvailabilityTime(dayAvailability.startTime)} -{" "}
-                                        {formatAvailabilityTime(dayAvailability.endTime)}
-                                      </span>
-                                    ) : (
-                                      <span className="text-xs">Not available</span>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <div className="text-xs text-muted-foreground p-3 bg-gray-50 rounded-lg border border-gray-100">
-                              Doctor hasn't mentioned anything about their availability.
-                            </div>
-                          )}
                         </div>
                       </div>
-                    </div>
+                    </fetcher.Form>
                   </DialogContent>
                 </Dialog>
               </CardFooter>

@@ -121,6 +121,8 @@ model Appointment {
   doctorNotes   String?
   healthMetrics HealthMetric[]
 
+  questionnaire AppointmentQuestionnaire?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -189,6 +191,31 @@ model HealthMetric {
   updatedAt DateTime @updatedAt
 
   @@map("health_metrics")
+}
+
+model AppointmentQuestionnaire {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentId String      @unique
+
+  questions QuestionWithAnswer[]
+
+  @@map("appointment_questionnaires")
+}
+
+model QuestionWithAnswer {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String
+  createdAt DateTime @default(now())
+
+  appointmentQuestionnaire   AppointmentQuestionnaire? @relation(fields: [appointmentQuestionnaireId], references: [id], onDelete: Cascade)
+  appointmentQuestionnaireId String?
+
+  @@map("question_with_answers")
 }
 
 enum UserRole {

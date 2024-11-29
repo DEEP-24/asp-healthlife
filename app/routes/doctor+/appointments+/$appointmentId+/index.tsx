@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
 import { Label } from "components/ui/label";
 import { Textarea } from "components/ui/textarea";
 import { format } from "date-fns";
-import { ArrowLeftIcon, CalendarIcon, Clock, User } from "lucide-react";
+import { ArrowLeftIcon, CalendarIcon, Clock, User, ClipboardList } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { jsonWithSuccess } from "remix-toast";
+import { jsonWithSuccess, redirectWithSuccess } from "remix-toast";
 import PageHeading from "~/components/page-heading";
 import { db } from "~/lib/prisma.server";
 import { AppointmentStatus } from "~/utils/enums";
@@ -40,6 +40,11 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
         },
       },
       healthMetrics: true,
+      questionnaire: {
+        include: {
+          questions: true,
+        },
+      },
     },
   });
 
@@ -72,7 +77,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           status: status as AppointmentStatus,
         },
       });
-      return jsonWithSuccess({ success: true }, "Appointment status updated successfully");
+      return redirectWithSuccess(
+        `/doctor/appointments/${appointmentId}`,
+        "Appointment status updated successfully",
+      );
     } catch (_error) {
       return json({ error: "Failed to update status" }, { status: 500 });
     }
@@ -163,27 +171,43 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const notes = formData.get("notes") as string;
 
     try {
-      await db.appointment.update({
-        where: { id: appointmentId },
-        data: {
-          healthMetrics: {
-            create: {
-              waterIntake,
-              calories,
-              notes,
-              user: {
-                connect: {
-                  id: appointment!.patientId,
+      const existingMetrics = await db.healthMetric.findFirst({
+        where: { appointmentId: appointmentId },
+      });
+
+      if (existingMetrics) {
+        await db.healthMetric.update({
+          where: { id: existingMetrics.id },
+          data: {
+            waterIntake,
+            calories,
+            notes,
+          },
+        });
+      } else {
+        await db.appointment.update({
+          where: { id: appointmentId },
+          data: {
+            healthMetrics: {
+              create: {
+                waterIntake,
+                calories,
+                notes,
+                user: {
+                  connect: {
+                    id: appointment!.patientId,
+                  },
                 },
               },
             },
           },
-        },
-      });
-      return jsonWithSuccess({ success: true }, "Health metrics added successfully");
+        });
+      }
+
+      return jsonWithSuccess({ success: true }, "Health metrics updated successfully");
     } catch (error) {
-      console.error("Failed to add health metrics:", error);
-      return json({ error: "Failed to add health metrics" }, { status: 500 });
+      console.error("Failed to update health metrics:", error);
+      return json({ error: "Failed to update health metrics" }, { status: 500 });
     }
   }
 
@@ -348,6 +372,23 @@ export default function AppointmentView() {
                   </div>
                 </div>
               </div>
+
+              {appointment.questionnaire && (
+                <div className="border rounded-lg p-4 mt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="font-medium">Questionnaire Responses</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {appointment.questionnaire.questions.map((question) => (
+                      <div key={question.id} className="space-y-1">
+                        <Label className="text-muted-foreground">{question.question}</Label>
+                        <p className="text-sm">{question.answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

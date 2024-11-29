@@ -2,7 +2,15 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
 import { format } from "date-fns";
-import { ArrowLeftIcon, CalendarIcon, Clock, HeartPulse, Salad, User } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  CalendarIcon,
+  Clock,
+  HeartPulse,
+  Salad,
+  User,
+  ClipboardList,
+} from "lucide-react";
 import PageHeading from "~/components/page-heading";
 import { db } from "~/lib/prisma.server";
 import { requireUserId } from "~/lib/session.server";
@@ -23,7 +31,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         select: {
           firstName: true,
           lastName: true,
-          specialty: true,
+          speciality: true,
           email: true,
           phoneNo: true,
         },
@@ -34,6 +42,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         },
       },
       healthMetrics: true,
+      questionnaire: {
+        include: {
+          questions: true,
+        },
+      },
     },
   });
 
@@ -111,7 +124,7 @@ export default function AppointmentDetailsPage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Specialty</span>
-                    <p>{appointment.doctor.specialty}</p>
+                    <p>{appointment.doctor.speciality}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Email</span>
@@ -123,6 +136,25 @@ export default function AppointmentDetailsPage() {
                   </div>
                 </div>
               </div>
+
+              {appointment.questionnaire && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="font-medium">Your Questionnaire Responses</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {appointment.questionnaire.questions.map((question) => (
+                      <div key={question.id} className="space-y-2">
+                        <span className="text-muted-foreground block text-sm">
+                          {question.question}
+                        </span>
+                        <p className="text-sm bg-muted p-2 rounded-md">{question.answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {appointment.notes && (
                 <div className="border rounded-lg p-4">
