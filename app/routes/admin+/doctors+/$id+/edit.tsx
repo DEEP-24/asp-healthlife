@@ -1,34 +1,34 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, json, redirect, useLoaderData } from "@remix-run/react";
-import { Button } from "components/ui/button";
-import { Card, CardContent } from "components/ui/card";
-import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
+import { Link, json, redirect, useLoaderData } from '@remix-run/react'
+import { Button } from 'components/ui/button'
+import { Card, CardContent } from 'components/ui/card'
+import { Input } from 'components/ui/input'
+import { Label } from 'components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "components/ui/select";
-import { jsonWithError, redirectWithSuccess } from "remix-toast";
-import PageHeading from "~/components/page-heading";
-import { db } from "~/lib/prisma.server";
-import { requireUserId } from "~/lib/session.server";
-import { UserRole } from "~/utils/enums";
-import { useFetcherCallback } from "~/utils/hooks/use-fetcher-callback";
-import { type inferErrors, validateAction } from "~/utils/validation";
-import { EditDoctorSchema } from "~/utils/zod.schema";
+} from 'components/ui/select'
+import { jsonWithError, redirectWithSuccess } from 'remix-toast'
+import PageHeading from '~/components/page-heading'
+import { db } from '~/lib/prisma.server'
+import { requireUserId } from '~/lib/session.server'
+import { UserRole } from '~/utils/enums'
+import { useFetcherCallback } from '~/utils/hooks/use-fetcher-callback'
+import { type inferErrors, validateAction } from '~/utils/validation'
+import { EditDoctorSchema } from '~/utils/zod.schema'
 
 type ActionData = {
-  success: boolean;
-  fieldErrors?: inferErrors<typeof EditDoctorSchema>;
-};
+  success: boolean
+  fieldErrors?: inferErrors<typeof EditDoctorSchema>
+}
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
-  const { id } = params;
+  const { id } = params
   if (!id) {
-    throw redirect("/admin/doctors");
+    throw redirect('/admin/doctors')
   }
 
   const doctor = await db.user.findUnique({
@@ -36,26 +36,32 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
       id,
       role: UserRole.DOCTOR,
     },
-  });
+  })
 
   if (!doctor) {
-    throw redirect("/admin/doctors");
+    throw redirect('/admin/doctors')
   }
 
-  return json({ doctor });
-};
+  return json({ doctor })
+}
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const { id: doctorId } = params;
+  const { id: doctorId } = params
   if (!doctorId) {
-    throw redirect("/admin/doctors");
+    throw redirect('/admin/doctors')
   }
 
-  await requireUserId(request);
-  const { fieldErrors, fields } = await validateAction(request, EditDoctorSchema);
+  await requireUserId(request)
+  const { fieldErrors, fields } = await validateAction(
+    request,
+    EditDoctorSchema,
+  )
 
   if (fieldErrors) {
-    return jsonWithError({ fieldErrors, success: false }, "Please correct the errors");
+    return jsonWithError(
+      { fieldErrors, success: false },
+      'Please correct the errors',
+    )
   }
 
   const doctorWithEmail = await db.user.findFirst({
@@ -63,13 +69,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       email: fields.email,
       id: { not: doctorId },
     },
-  });
+  })
 
   if (doctorWithEmail) {
     return jsonWithError(
-      { fieldErrors: { email: "Email already exists" }, success: false },
-      "Email already exists",
-    );
+      { fieldErrors: { email: 'Email already exists' }, success: false },
+      'Email already exists',
+    )
   }
 
   await db.user.update({
@@ -86,19 +92,19 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       state: fields.state,
       zip: fields.zip,
     },
-  });
+  })
 
-  return redirectWithSuccess("/admin/doctors", "Doctor updated successfully");
-};
+  return redirectWithSuccess('/admin/doctors', 'Doctor updated successfully')
+}
 
 export default function EditDoctor() {
-  const { doctor } = useLoaderData<typeof loader>();
-  const fetcher = useFetcherCallback<ActionData>();
+  const { doctor } = useLoaderData<typeof loader>()
+  const fetcher = useFetcherCallback<ActionData>()
 
   return (
-    <Card className="mx-auto max-w-screen-xl mt-10">
+    <Card className="mx-auto mt-10 max-w-screen-xl">
       <CardContent className="p-6">
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div className="max-sm:w-full sm:flex-1">
             <PageHeading title="Edit Doctor" />
           </div>
@@ -118,7 +124,9 @@ export default function EditDoctor() {
                   aria-invalid={!!fetcher.data?.fieldErrors?.firstName}
                 />
                 {fetcher.data?.fieldErrors?.firstName && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.firstName}</p>
+                  <p className="text-sm text-destructive">
+                    {fetcher.data.fieldErrors.firstName}
+                  </p>
                 )}
               </div>
               <div>
@@ -131,7 +139,9 @@ export default function EditDoctor() {
                   aria-invalid={!!fetcher.data?.fieldErrors?.lastName}
                 />
                 {fetcher.data?.fieldErrors?.lastName && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.lastName}</p>
+                  <p className="text-sm text-destructive">
+                    {fetcher.data.fieldErrors.lastName}
+                  </p>
                 )}
               </div>
             </div>
@@ -148,7 +158,9 @@ export default function EditDoctor() {
                   aria-invalid={!!fetcher.data?.fieldErrors?.email}
                 />
                 {fetcher.data?.fieldErrors?.email && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.email}</p>
+                  <p className="text-sm text-destructive">
+                    {fetcher.data.fieldErrors.email}
+                  </p>
                 )}
               </div>
             </div>
@@ -169,7 +181,9 @@ export default function EditDoctor() {
                   </SelectContent>
                 </Select>
                 {fetcher.data?.fieldErrors?.speciality && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.speciality}</p>
+                  <p className="text-sm text-destructive">
+                    {fetcher.data.fieldErrors.speciality}
+                  </p>
                 )}
               </div>
               <div>
@@ -182,7 +196,9 @@ export default function EditDoctor() {
                   aria-invalid={!!fetcher.data?.fieldErrors?.phoneNo}
                 />
                 {fetcher.data?.fieldErrors?.phoneNo && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.phoneNo}</p>
+                  <p className="text-sm text-destructive">
+                    {fetcher.data.fieldErrors.phoneNo}
+                  </p>
                 )}
               </div>
             </div>
@@ -194,12 +210,16 @@ export default function EditDoctor() {
                   id="dob"
                   name="dob"
                   type="date"
-                  defaultValue={new Date(doctor.dob).toISOString().split("T")[0]}
+                  defaultValue={
+                    new Date(doctor.dob).toISOString().split('T')[0]
+                  }
                   aria-invalid={!!fetcher.data?.fieldErrors?.dob}
-                  max={new Date("2000-12-31").toISOString().split("T")[0]}
+                  max={new Date('2000-12-31').toISOString().split('T')[0]}
                 />
                 {fetcher.data?.fieldErrors?.dob && (
-                  <p className="text-sm text-destructive">{fetcher.data.fieldErrors.dob}</p>
+                  <p className="text-sm text-destructive">
+                    {fetcher.data.fieldErrors.dob}
+                  </p>
                 )}
               </div>
             </div>
@@ -236,7 +256,7 @@ export default function EditDoctor() {
               </div>
             </div>
 
-            <div className="flex gap-4 items-center justify-end">
+            <div className="flex items-center justify-end gap-4">
               <Button variant="outline" asChild>
                 <Link to="/admin/doctors">Cancel</Link>
               </Button>
@@ -245,12 +265,12 @@ export default function EditDoctor() {
                 form="edit-doctor-form"
                 className="bg-green-200 text-green-900 hover:bg-green-300"
               >
-                {fetcher.isPending ? "Updating..." : "Update"}
+                {fetcher.isPending ? 'Updating...' : 'Update'}
               </Button>
             </div>
           </div>
         </fetcher.Form>
       </CardContent>
     </Card>
-  );
+  )
 }

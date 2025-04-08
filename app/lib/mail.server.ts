@@ -10,14 +10,23 @@ const transporter = nodemailer.createTransport({
   },
 })
 
-interface SendEmailProps extends MailOptions {}
+interface SendEmailProps extends Omit<MailOptions, 'html' | 'text'> {
+  text?: string
+  html?: string
+}
 
-export const sendEmail = async ({ to, text, subject }: SendEmailProps) => {
+export const sendEmail = async ({
+  to,
+  text,
+  subject,
+  html,
+}: SendEmailProps) => {
   const response = await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to,
     text,
     subject,
+    html,
   })
 
   console.log(response.response)
