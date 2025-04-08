@@ -14,14 +14,14 @@ async function sendUpdateEmails() {
       select: { email: true, firstName: true, lastName: true },
     })
 
-    const batchSize = 50
+    const batchSize = 10
     for (let i = 0; i < users.length; i += batchSize) {
       const batch = users.slice(i, i + batchSize)
       await Promise.allSettled(
         batch.map(user =>
           sendEmail({
             to: user.email,
-            subject: 'Weekly Update',
+            subject: 'Weekly Reminder',
             text: generateEmailContent(user),
           }),
         ),
