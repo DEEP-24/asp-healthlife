@@ -65,18 +65,19 @@ async function createUsers() {
 
   await db.user.create({
     data: {
-      firstName: 'Dr. John',
-      lastName: 'Doe',
+      firstName: 'Priya',
+      lastName: 'Amudala',
       street: '456 Medical Avenue',
       phoneNo: '9876543210',
       city: 'New York',
       state: 'NY',
       zip: '10001',
       dob: new Date('1980-03-15'),
-      email: 'doctor@app.com',
+      email: 'pxa68760@ucmo.edu',
       password: await createHash('password'),
-      role: UserRole.DOCTOR,
-      speciality: 'Cardiology',
+      role: UserRole.USER,
+      height: '135',
+      weight: '60',
     },
   })
 
