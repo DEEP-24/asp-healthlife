@@ -47,8 +47,8 @@ async function createUsers() {
 
   await db.user.create({
     data: {
-      firstName: 'Sophia',
-      lastName: 'Anderson',
+      firstName: 'Krishna',
+      lastName: 'Govinda',
       street: '123 Main Street',
       phoneNo: '1234567890',
       city: 'Houston',
