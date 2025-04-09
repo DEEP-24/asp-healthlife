@@ -11,30 +11,53 @@ interface User {
 
 async function sendUpdateEmails() {
   try {
+    console.log('🔍 Fetching users from database...')
     const users = await db.user.findMany({
       where: {
         role: UserRole.USER,
       },
       select: { email: true, firstName: true, lastName: true },
     })
+    console.log(`📧 Found ${users.length} users to send emails to`)
 
     const batchSize = 10
     for (let i = 0; i < users.length; i += batchSize) {
       const batch = users.slice(i, i + batchSize)
-      await Promise.allSettled(
-        batch.map(user =>
-          sendEmail({
-            to: user.email,
-            subject: 'Weekly Reminder',
-            text: generateTextEmailContent(user),
-            html: generateHtmlEmailContent(user),
-          }),
-        ),
+      console.log(
+        `📤 Processing batch ${i / batchSize + 1} of ${Math.ceil(users.length / batchSize)}`,
       )
+
+      const results = await Promise.allSettled(
+        batch.map(async user => {
+          console.log(`📨 Attempting to send email to ${user.email}`)
+          try {
+            const result = await sendEmail({
+              to: user.email,
+              subject: 'Weekly Reminder',
+              text: generateTextEmailContent(user),
+              html: generateHtmlEmailContent(user),
+            })
+            console.log(`✅ Email sent successfully to ${user.email}`)
+            return result
+          } catch (error) {
+            console.error(`❌ Failed to send email to ${user.email}:`, error)
+            throw error
+          }
+        }),
+      )
+
+      // Log results for this batch
+      const successful = results.filter(r => r.status === 'fulfilled').length
+      const failed = results.filter(r => r.status === 'rejected').length
+      console.log(
+        `📊 Batch results: ${successful} successful, ${failed} failed`,
+      )
+
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
   } catch (error) {
-    console.error('Failed to send update emails:', error)
+    console.error('❌ Failed to send update emails:', error)
+    throw error // Re-throw to handle in the test script
   }
 }
 
