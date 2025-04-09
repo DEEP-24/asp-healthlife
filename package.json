@@ -15,7 +15,8 @@
     "setup:db": "bunx prisma db push && bunx prisma db seed",
     "start": "bun run build && cross-env NODE_ENV=production node ./server.mjs",
     "typecheck": "tsc",
-    "validate": "bun run lint && bun run typecheck"
+    "validate": "bun run lint && bun run typecheck",
+    "test:email": "bun run app/scripts/test-email.ts"
   },
   "dependencies": {
     "@biomejs/biome": "^1.9.4",
