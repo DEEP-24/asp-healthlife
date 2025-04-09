@@ -1,6 +1,8 @@
 import * as cron from 'node-cron'
+import { P } from 'ts-pattern'
 import { sendEmail } from '~/lib/mail.server'
 import { db } from '~/lib/prisma.server'
+import { UserRole } from '~/utils/enums'
 
 interface User {
   firstName: string
@@ -11,6 +13,9 @@ interface User {
 async function sendUpdateEmails() {
   try {
     const users = await db.user.findMany({
+      where: {
+        role: UserRole.USER,
+      },
       select: { email: true, firstName: true, lastName: true },
     })
 
