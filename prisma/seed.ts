@@ -55,7 +55,7 @@ async function createUsers() {
       state: 'TX',
       zip: '77002',
       dob: new Date('1993-11-18'),
-      email: 'priya.pd1217@gmail.com',
+      email: 'vk221197@gmail.com',
       password: await createHash('password'),
       role: UserRole.USER,
       height: '170',
